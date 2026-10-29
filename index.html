@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)} body{margin:0} [hidden]{display:none!important}</style>
+<title>Эпюр Монжа</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=PT+Serif:ital,wght@1,400;1,700&family=Unbounded:wght@500;700&display=swap">
+<style>
+/* Layout: drafting sheet. Controls column on the left, the epure and the 3D octant view side by side, octant reference table below. */
+:root {
+  --paper: #E9EDEA;
+  --sheet: #FAFBF9;
+  --ink: #1C2430;
+  --muted: #5F6A78;
+  --rule: #C6CECB;
+  --grid: #E0E6E3;
+  --grid-major: #C3CDC9;
+  --accent: #2A4FB5;
+  --accent-soft: #DCE4F6;
+  --p1: #3D78D2;
+  --p2: #C98322;
+  --p3: #378F5C;
+  --font-display: "Unbounded", "Golos Text", system-ui, sans-serif;
+  --font-body: "Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --font-label: "PT Serif", Georgia, "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #111518; --sheet: #191E23; --ink: #E3E7EB; --muted: #8E98A4; --rule: #313942;
+    --grid: #2A323B; --grid-major: #3E4853; --accent: #8BA8FF; --accent-soft: #24304C;
+    --p1: #6F9EEC; --p2: #E2A455; --p3: #63BD88; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #111518; --sheet: #191E23; --ink: #E3E7EB; --muted: #8E98A4; --rule: #313942;
+  --grid: #2A323B; --grid-major: #3E4853; --accent: #8BA8FF; --accent-soft: #24304C;
+  --p1: #6F9EEC; --p2: #E2A455; --p3: #63BD88; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+.wrap {
+  max-width: 1500px; margin: 0 auto;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 18px;
+}
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 3.2vw, 34px); letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 500; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; margin: 0; color: var(--muted); }
+.lede { margin: 6px 0 0; max-width: 68ch; color: var(--muted); }
+sub { font-size: 0.72em; }
+
+.layout { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 1000px) { .layout { grid-template-columns: 350px minmax(0, 1fr); } }
+.side { display: grid; gap: 14px; min-width: 0; }
+.card { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+
+.btn {
+  font: 500 13px/1 var(--font-body); color: var(--ink); background: transparent;
+  border: 1px solid var(--rule); border-radius: 5px; padding: 8px 11px; cursor: pointer;
+}
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--sheet); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { color: var(--muted); }
+.btn.armed { color: #C0392B; border-color: #C0392B; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+input[type="text"], input[type="number"], .quick input {
+  font: 400 14px var(--font-mono); color: var(--ink); background: var(--paper);
+  border: 1px solid var(--rule); border-radius: 4px; padding: 7px 8px; width: 100%; min-width: 0;
+}
+input:focus { border-color: var(--accent); outline: none; }
+.quick { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.msg { margin: -4px 0 0; font-size: 13px; color: var(--muted); min-height: 1.2em; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.msg.err { color: #C0392B; }
+.msg button { font: 500 12px var(--font-body); background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; text-decoration: underline; }
+
+.ptHead, .pt { display: grid; grid-template-columns: 18px 52px repeat(3, minmax(0, 1fr)) 26px; gap: 6px; align-items: center; }
+.ptHead { font: 500 11px var(--font-mono); color: var(--muted); letter-spacing: 0.04em; padding: 0 6px; }
+.ptList { display: grid; gap: 4px; }
+.pt { padding: 5px 6px; border-radius: 5px; border: 1px solid transparent; cursor: pointer; }
+.pt.sel { background: var(--accent-soft); border-color: var(--accent); }
+.pt input { padding: 5px 6px; font-size: 13px; text-align: right; background: var(--sheet); }
+.pt input.nm { text-align: left; font-family: var(--font-label); font-style: italic; font-weight: 700; font-size: 15px; }
+.sw { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--sheet); box-shadow: 0 0 0 1px var(--rule); background: var(--c); cursor: pointer; padding: 0; }
+.del { width: 26px; height: 26px; border: 0; background: none; color: var(--muted); font-size: 18px; cursor: pointer; border-radius: 4px; }
+.del:hover { color: #C0392B; background: var(--paper); }
+.empty { color: var(--muted); font-size: 14px; padding: 8px 6px; }
+
+.info-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.info-name { font-family: var(--font-label); font-style: italic; font-weight: 700; font-size: 22px; }
+.info-name .co { font-family: var(--font-mono); font-style: normal; font-weight: 400; font-size: 14px; color: var(--muted); margin-left: 4px; }
+.badge { font: 600 12px var(--font-body); letter-spacing: 0.04em; padding: 5px 10px; border-radius: 999px; background: var(--accent); color: var(--sheet); }
+.badge.edge { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+.info-text { margin: 0; font-size: 14px; }
+.kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 14px; }
+.kv dt { font-family: var(--font-label); font-style: italic; font-weight: 700; }
+.kv dd { margin: 0; font-family: var(--font-mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.kv dd small { font-family: var(--font-body); color: var(--muted); font-size: 12.5px; margin-left: 6px; }
+.dist { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.dist div { border: 1px solid var(--rule); border-radius: 5px; padding: 6px 8px; font-size: 12px; color: var(--muted); }
+.dist b { display: block; font: 500 15px var(--font-mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.note-c { font-size: 13px; color: var(--muted); margin: 0; }
+
+.opts { display: grid; gap: 10px; }
+.chk { display: flex; gap: 8px; align-items: center; font-size: 14px; cursor: pointer; }
+.chk input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; flex-wrap: wrap; }
+.seg label { position: relative; cursor: pointer; }
+.seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.seg span { display: block; padding: 6px 10px; font-size: 13px; color: var(--muted); }
+.seg input:checked + span { background: var(--accent); color: var(--sheet); }
+.seg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: -2px; }
+.optrow { display: grid; gap: 6px; }
+.optrow > span { font-size: 13px; color: var(--muted); }
+.seg button { font: 400 13px var(--font-body); background: none; border: 0; border-right: 1px solid var(--rule); color: var(--muted); padding: 6px 10px; cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button.on { background: var(--accent); color: var(--sheet); }
+
+.views { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); min-width: 0; }
+.view { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.viewHead { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 32px; }
+.note { font-size: 12.5px; color: var(--muted); font-family: var(--font-mono); }
+.svgBox, .cvBox { width: 100%; aspect-ratio: 1; max-width: 100%; }
+#epure { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#epure:active { cursor: grabbing; }
+#epZoom button { min-width: 34px; }
+#epure .pt-g { cursor: pointer; }
+#cv { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#cv:active { cursor: grabbing; }
+.hint { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+svg .grid { stroke: var(--grid); stroke-width: 0.6; }
+svg .grid.major { stroke: var(--grid-major); stroke-width: 1; }
+svg .axis { stroke: var(--ink); stroke-width: 1.4; }
+svg .kline { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 14 4 2 4; }
+svg .link { stroke-width: 1; opacity: 0.7; fill: none; }
+svg .link.sel { stroke-width: 1.7; opacity: 1; }
+svg .axlab { font-family: var(--font-label); font-style: italic; font-size: 21px; fill: var(--ink); }
+svg .klab { font-family: var(--font-label); font-style: italic; font-size: 18px; fill: var(--muted); }
+svg .plab { font-family: var(--font-label); font-style: italic; font-size: 18px; paint-order: stroke; stroke: var(--sheet); stroke-width: 4px; stroke-linejoin: round; }
+svg .plab.sel { font-weight: 700; font-size: 20px; }
+svg .alab { font-family: var(--font-label); font-style: italic; font-size: 14px; paint-order: stroke; stroke: var(--sheet); stroke-width: 3px; }
+svg .mk { stroke: var(--sheet); stroke-width: 1.6; }
+svg .apt { fill: var(--sheet); stroke-width: 1.4; }
+
+.octTable { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--rule); }
+th { font: 500 11px var(--font-mono); color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
+td.r { font-family: var(--font-label); font-style: italic; font-weight: 700; font-size: 16px; }
+td.s { font-family: var(--font-mono); text-align: center; width: 48px; }
+tr.hit td { background: var(--accent-soft); }
+tr.hit td.r { color: var(--accent); }
+.foot { font-size: 13px; color: var(--muted); margin: 0; max-width: 90ch; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Эпюр Монжа</h1>
+    <p class="lede">Задайте координаты точки, и программа построит её фронтальную, горизонтальную и профильную проекции на комплексном чертеже, а рядом покажет точку в пространстве октантов. Единицы: мм.</p>
+  </header>
+
+  <div class="layout">
+    <aside class="side">
+      <section class="card">
+        <h2>Точки</h2>
+        <form id="quick" class="quick" autocomplete="off">
+          <input id="quickInput" type="text" placeholder="A(20; 35; −15)" aria-label="Точка в виде A(x; y; z)">
+          <button type="submit" class="btn primary">Построить</button>
+        </form>
+        <p id="quickMsg" class="msg" aria-live="polite">Формат: имя(x; y; z). Существующая точка с тем же именем обновится.</p>
+        <div class="ptHead" aria-hidden="true"><span></span><span>ИМЯ</span><span style="text-align:right">X</span><span style="text-align:right">Y</span><span style="text-align:right">Z</span><span></span></div>
+        <div id="ptList" class="ptList"></div>
+        <div class="row">
+          <button id="btnAdd" class="btn" type="button">+ Точка</button>
+          <button id="btnAll8" class="btn" type="button">Пример: 8 октантов</button>
+          <button id="btnClear" class="btn ghost" type="button">Очистить</button>
+        </div>
+      </section>
+
+      <section class="card" id="infoCard" aria-live="polite"></section>
+
+      <section class="card">
+        <h2>Отображение</h2>
+        <div class="opts">
+          <label class="chk"><input type="checkbox" id="opt-links" data-opt="links"> Линии связи</label>
+          <label class="chk"><input type="checkbox" id="opt-profile" data-opt="profile"> Профильная проекция (П<sub>3</sub>)</label>
+          <label class="chk"><input type="checkbox" id="opt-axisPts" data-opt="axisPts"> Точки на осях (A<sub>x</sub>, A<sub>y</sub>, A<sub>z</sub>)</label>
+          <label class="chk"><input type="checkbox" id="opt-grid" data-opt="grid"> Сетка на эпюре</label>
+          <label class="chk"><input type="checkbox" id="opt-planes" data-opt="planes"> Плоскости в 3D</label>
+          <label class="chk"><input type="checkbox" id="opt-octLabels" data-opt="octLabels"> Номера октантов в 3D</label>
+          <div class="optrow">
+            <span>Перенос глубины Y на П<sub>3</sub></span>
+            <div class="seg" role="radiogroup" aria-label="Способ переноса координаты Y">
+              <label><input type="radio" name="constMode" id="cm-line" value="line"><span>Постоянная прямая</span></label>
+              <label><input type="radio" name="constMode" id="cm-arc" value="arc"><span>Дуги</span></label>
+            </div>
+          </div>
+          <div class="optrow">
+            <span>Обозначения проекций</span>
+            <div class="seg" role="radiogroup" aria-label="Обозначения проекций">
+              <label><input type="radio" name="notation" id="nt-prime" value="prime"><span>A′ A″ A‴</span></label>
+              <label><input type="radio" name="notation" id="nt-index" value="index"><span>A₁ A₂ A₃</span></label>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <main class="views">
+      <section class="view">
+        <div class="viewHead">
+          <h2>Комплексный чертёж</h2>
+          <div class="seg" id="epZoom">
+            <button type="button" data-z="out" aria-label="Уменьшить">−</button>
+            <button type="button" data-z="in" aria-label="Увеличить">+</button>
+            <button type="button" data-z="fit">Вписать</button>
+          </div>
+        </div>
+        <div class="svgBox"><svg id="epure" viewBox="0 0 800 800" role="img" aria-label="Эпюр Монжа с проекциями точек"></svg></div>
+        <p class="hint"><span class="note" id="scaleNote"></span><br>Колесо мыши или два пальца меняют масштаб, перетаскивание сдвигает лист. Щелчок по проекции выбирает точку.</p>
+      </section>
+      <section class="view">
+        <div class="viewHead">
+          <h2>Октанты</h2>
+          <div class="seg" id="viewBtns">
+            <button type="button" data-v="axo" class="on">3D</button>
+            <button type="button" data-v="front">Спереди</button>
+            <button type="button" data-v="top">Сверху</button>
+            <button type="button" data-v="side">Сбоку</button>
+          </div>
+        </div>
+        <div class="cvBox"><canvas id="cv" aria-label="Наглядное изображение октантов"></canvas></div>
+        <p class="hint">Тяните, чтобы повернуть; колесо мыши меняет масштаб. Виды «Спереди», «Сверху», «Сбоку» совпадают с проекциями на П<sub>2</sub>, П<sub>1</sub>, П<sub>3</sub>.</p>
+      </section>
+    </main>
+  </div>
+
+  <section class="card octTable">
+    <h2>Знаки координат в октантах</h2>
+    <table>
+      <thead><tr><th>Октант</th><th style="text-align:center">X</th><th style="text-align:center">Y</th><th style="text-align:center">Z</th><th>Горизонтальная проекция</th><th>Фронтальная проекция</th></tr></thead>
+      <tbody id="octBody"></tbody>
+    </table>
+    <p class="foot">Оси расположены как на вашем листе: X вправо, Z вверх, Y горизонтальной проекции вниз, Y‴ профильной проекции влево. Нумерация октантов общепринятая: I–IV при X &gt; 0 обходят ось X (+ + +, + − +, + − −, + + −), V–VIII повторяют их при X &lt; 0.</p>
+  </section>
+</div>
+
+<script>
+(() => {
+  const D = Math.PI / 180;
+  const PALETTE = ['#D2443A', '#2F6CD8', '#2A9858', '#8A4FD1', '#D9802A', '#16969C', '#C23F80', '#8A6A3C'];
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+  const OCT = [[1,1,1],[1,-1,1],[1,-1,-1],[1,1,-1],[-1,1,1],[-1,-1,1],[-1,-1,-1],[-1,1,-1]];
+  const LETTERS = 'ABCDEFGHKLMNPQRSTUVW';
+  const STORE = 'monge-epure-v1';
+  const DEFAULT_OPTS = { links: true, profile: true, axisPts: true, grid: true, planes: true, octLabels: true, constMode: 'line', notation: 'prime' };
+  const SAMPLE = [
+    { name: 'A', x: 30, y: 20, z: 25 },
+    { name: 'B', x: 15, y: -25, z: 20 },
+    { name: 'C', x: -25, y: 15, z: -20 },
+  ];
+  const ALL8 = [
+    ['A', 35, 20, 25], ['B', 25, -15, 30], ['C', 15, -25, -20], ['D', 40, 30, -15],
+    ['E', -15, 25, 20], ['F', -30, -20, 15], ['G', -20, -30, -25], ['H', -35, 15, -30],
+  ];
+  const VIEWS = { axo: [-35 * D, 22 * D], front: [0, 0], top: [0, 90 * D], side: [-90 * D, 0] };
+  const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const $ = s => document.querySelector(s);
+  const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const fmt = n => { const r = Math.round(n * 100) / 100; return (r < 0 ? '−' : '') + String(Math.abs(r)).replace('.', ','); };
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  // ---------- state ----------
+  let state = load();
+  let undo = null;
+  const view = { yaw: VIEWS.axo[0], pitch: VIEWS.axo[1], zoom: 1 };
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORE);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s && Array.isArray(s.points)) {
+          const points = s.points.map(sanitize);
+          return { points, sel: clamp(s.sel | 0, -1, points.length - 1), opts: { ...DEFAULT_OPTS, ...(s.opts || {}) } };
+        }
+      }
+    } catch (e) {}
+    return { points: SAMPLE.map((p, i) => ({ ...p, color: PALETTE[i] })), sel: 0, opts: { ...DEFAULT_OPTS } };
+  }
+  function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
+  function sanitize(p, i) {
+    return { name: String(p && p.name || LETTERS[i % LETTERS.length]).slice(0, 6), x: num(p && p.x), y: num(p && p.y), z: num(p && p.z), color: (p && p.color) || PALETTE[i % PALETTE.length] };
+  }
+  function nextName() {
+    const used = new Set(state.points.map(p => p.name));
+    for (const l of LETTERS) if (!used.has(l)) return l;
+    for (let n = 1; ; n++) for (const l of LETTERS) if (!used.has(l + n)) return l + n;
+  }
+  function nextColor() {
+    const used = state.points.map(p => p.color);
+    return PALETTE.find(c => !used.includes(c)) || PALETTE[state.points.length % PALETTE.length];
+  }
+
+  // ---------- geometry ----------
+  function octMatches(p) {
+    const s = [Math.sign(p.x), Math.sign(p.y), Math.sign(p.z)];
+    return OCT.map((_, i) => i).filter(i => OCT[i].every((v, j) => s[j] === 0 || s[j] === v));
+  }
+  function position(p) {
+    const m = octMatches(p), list = m.map(i => ROMAN[i]);
+    if (m.length === 1) return { badge: ROMAN[m[0]] + ' октант', edge: false, text: `Точка лежит в ${ROMAN[m[0]]} октанте.` };
+    if (m.length === 8) return { badge: 'Начало координат', edge: true, text: 'Точка совпадает с началом координат O. Все три проекции тоже в точке O.' };
+    if (m.length === 4) {
+      const ax = p.x ? 'X' : p.y ? 'Y' : 'Z', v = p.x || p.y || p.z;
+      return { badge: `Ось ${v < 0 ? '−' : ''}${ax}`, edge: true, text: `Точка лежит на ${v < 0 ? 'отрицательной' : 'положительной'} полуоси ${ax}, на общей границе октантов ${list.join(', ')}.` };
+    }
+    let pl, half;
+    if (p.z === 0) { pl = 'П₁'; half = p.y > 0 ? 'передняя пола' : 'задняя пола'; }
+    else if (p.y === 0) { pl = 'П₂'; half = p.z > 0 ? 'верхняя пола' : 'нижняя пола'; }
+    else { pl = 'П₃'; half = ''; }
+    return { badge: 'Плоскость ' + pl, edge: true, text: `Точка лежит в плоскости ${pl}${half ? ' (' + half + ')' : ''}, на границе октантов ${list[0]} и ${list[1]}.` };
+  }
+  const sideX = v => v > 0 ? 'над осью X' : v < 0 ? 'под осью X' : 'на оси X';
+
+  function lab(p, k) {
+    const prime = state.opts.notation === 'prime';
+    if (k === '1' || k === '2' || k === '3') return prime ? { base: p.name, sup: ['′', '″', '‴'][k - 1], sub: '' } : { base: p.name, sup: '', sub: k };
+    if (k) return { base: p.name, sup: '', sub: k };
+    return { base: p.name, sup: '', sub: '' };
+  }
+  const labHtml = L => esc(L.base) + (L.sup || '') + (L.sub ? `<sub>${esc(L.sub)}</sub>` : '');
+
+  function niceStep(v) {
+    const pow = Math.pow(10, Math.floor(Math.log10(v)));
+    const m = v / pow;
+    return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * pow;
+  }
+  function extent() {
+    let M = 10;
+    for (const p of state.points) M = Math.max(M, Math.abs(p.x), Math.abs(p.y), Math.abs(p.z));
+    return M;
+  }
+
+  // ---------- epure (SVG) ----------
+  // epure zoom and pan: ep.u, ep.v is the sheet point (mm) shown at the centre
+  const ep = { zoom: 1, u: 0, v: 0 };
+  let epScale = 1;
+  function renderEpure() {
+    const svg = $('#epure'), o = state.opts, pts = state.points;
+    const C = 400, M = extent();
+    const step = niceStep(M / 4);
+    const E = Math.ceil(M * 1.15 / step) * step;
+    const k = 330 / E * ep.zoom;
+    epScale = k;
+    // grid cell is 1 mm while it stays at least 4 px wide; every 5th line is bold
+    const minor = k >= 4 ? 1 : niceStep(4 / k), major = niceStep(minor * 5);
+    const sx = u => +(C + k * (u - ep.u)).toFixed(2), sy = v => +(C - k * (v - ep.v)).toFixed(2);
+    const pt = a => `${sx(a[0])},${sy(a[1])}`;
+    const half = C / k, u0 = ep.u - half, u1 = ep.u + half, v0 = ep.v - half, v1 = ep.v + half;
+    let out = '';
+
+    if (o.grid) {
+      const gc = t => { const q = t / major; return Math.abs(q - Math.round(q)) < 1e-9 ? 'grid major' : 'grid'; };
+      for (let n = Math.ceil(u0 / minor); n <= Math.floor(u1 / minor); n++) {
+        if (n) out += `<line class="${gc(n * minor)}" x1="${sx(n * minor)}" y1="0" x2="${sx(n * minor)}" y2="800"/>`;
+      }
+      for (let n = Math.ceil(v0 / minor); n <= Math.floor(v1 / minor); n++) {
+        if (n) out += `<line class="${gc(n * minor)}" x1="0" y1="${sy(n * minor)}" x2="800" y2="${sy(n * minor)}"/>`;
+      }
+    }
+    if (o.profile && o.links && o.constMode === 'line') {
+      const a = Math.min(u0, v0), b = Math.max(u1, v1), t = Math.max(u0, v0) + 24 / k;
+      out += `<line class="kline" x1="${sx(a)}" y1="${sy(a)}" x2="${sx(b)}" y2="${sy(b)}"/>`;
+      out += `<text class="klab" x="${sx(t) + 8}" y="${sy(t) - 6}">k</text>`;
+    }
+    // axes, labelled as on the sheet
+    const ox = sx(0), oy = sy(0);
+    out += `<line class="axis" x1="0" y1="${oy}" x2="800" y2="${oy}"/><line class="axis" x1="${ox}" y1="0" x2="${ox}" y2="800"/>`;
+    out += `<text class="axlab" x="${ox - 10}" y="40" text-anchor="end">−Y</text><text class="axlab" x="${ox + 10}" y="40">Z</text>`;
+    out += `<text class="axlab" x="${ox - 10}" y="776" text-anchor="end">Y</text><text class="axlab" x="${ox + 10}" y="776">−Z</text>`;
+    out += `<text class="axlab" x="24" y="${oy - 10}">Y‴</text><text class="axlab" x="24" y="${oy + 26}">−X</text>`;
+    out += `<text class="axlab" x="776" y="${oy - 10}" text-anchor="end">−Y‴</text><text class="axlab" x="776" y="${oy + 26}" text-anchor="end">X</text>`;
+    out += `<text class="axlab" x="${ox + 7}" y="${oy + 22}" style="font-size:17px">O</text>`;
+
+    let links = '', marks = '';
+    const labels = [], blocks = [];
+    const order = pts.map((_, i) => i).filter(i => i !== state.sel);
+    if (state.sel >= 0 && state.sel < pts.length) order.push(state.sel);
+    for (const i of order) {
+      const p = pts[i], sel = i === state.sel, col = p.color, cls = sel ? 'link sel' : 'link';
+      const P1 = [p.x, -p.y], P2 = [p.x, p.z], P3 = [-p.y, p.z];
+      if (o.links) {
+        links += `<line class="${cls}" stroke="${col}" x1="${sx(P1[0])}" y1="${sy(P1[1])}" x2="${sx(P2[0])}" y2="${sy(P2[1])}"/>`;
+        if (o.profile) {
+          links += `<line class="${cls}" stroke="${col}" x1="${sx(P2[0])}" y1="${sy(P2[1])}" x2="${sx(P3[0])}" y2="${sy(P3[1])}"/>`;
+          if (o.constMode === 'line') {
+            links += `<polyline class="${cls}" stroke="${col}" points="${pt(P1)} ${pt([-p.y, -p.y])} ${pt(P3)}"/>`;
+          } else {
+            const r = +(k * Math.abs(p.y)).toFixed(2);
+            links += `<path class="${cls}" stroke="${col}" d="M${pt(P1)} L${pt([0, -p.y])} A${r} ${r} 0 0 1 ${pt([-p.y, 0])} L${pt(P3)}"/>`;
+          }
+        }
+      }
+      let g = `<g class="pt-g" data-i="${i}">`;
+      const R = sel ? 5.2 : 4.2, lc = sel ? 'plab sel' : 'plab';
+      const projs = [[P2, '2', ['ur', 'ul', 'r', 'u', 'dr', 'dl']], [P1, '1', ['dr', 'dl', 'r', 'd', 'ur', 'ul']]];
+      if (o.profile) projs.push([P3, '3', ['ul', 'ur', 'l', 'u', 'dl', 'dr']]);
+      if (o.axisPts && o.links) {
+        const ax = [[p.x, 0, 'x'], [0, p.z, 'z'], [0, -p.y, 'y']];
+        if (o.profile) ax.push([-p.y, 0, 'y']);
+        for (const [u, v, s] of ax) {
+          // an axis point that sits on a projection (point in a plane or on an axis) is not drawn twice
+          if (projs.some(([P]) => P[0] === u && P[1] === v)) continue;
+          g += `<circle class="apt" stroke="${col}" cx="${sx(u)}" cy="${sy(v)}" r="${sel ? 3 : 2.4}"/>`;
+          blocks.push(dotBox(sx(u), sy(v), 3));
+          if (sel) labels.push({ i, sel, x: sx(u), y: sy(v), L: lab(p, s), cls: 'alab', size: 14, col, prefs: ['dr', 'ur', 'dl', 'ul', 'r', 'l'] });
+        }
+      }
+      for (const [P, s, prefs] of projs) {
+        g += `<circle class="mk" fill="${col}" cx="${sx(P[0])}" cy="${sy(P[1])}" r="${R}"/>`;
+        blocks.push(dotBox(sx(P[0]), sy(P[1]), R));
+        labels.push({ i, sel, x: sx(P[0]), y: sy(P[1]), L: lab(p, s), cls: lc, size: sel ? 20 : 18, col, prefs });
+      }
+      marks += g + '</g>';
+    }
+
+    // labels: selected point first, each takes the first free spot around its marker
+    let texts = '';
+    labels.sort((a, b) => b.sel - a.sel);
+    for (const lb of labels) {
+      const w = lb.size * (0.6 * lb.L.base.length + (lb.L.sup ? 0.35 : 0) + (lb.L.sub ? 0.45 : 0)) + 2;
+      const boxAt = ([dx, dy, an]) => {
+        const x = lb.x + dx, y = lb.y + dy, x0 = an === 'start' ? x : an === 'end' ? x - w : x - w / 2;
+        return [x0, y - lb.size * 0.75, x0 + w, y + lb.size * 0.3];
+      };
+      let pick = lb.prefs[0];
+      for (const c of [...lb.prefs, ...Object.keys(LBL)]) {
+        if (!blocks.some(b => boxHit(b, boxAt(LBL[c])))) { pick = c; break; }
+      }
+      const [dx, dy, an] = LBL[pick];
+      blocks.push(boxAt(LBL[pick]));
+      texts += `<g class="pt-g" data-i="${lb.i}">${svgText(lb.x + dx, lb.y + dy, lb.L, lb.cls, an, lb.col)}</g>`;
+    }
+    svg.innerHTML = out + links + marks + texts;
+    $('#scaleNote').textContent = `клетка ${fmt(minor)} мм, жирная линия через ${fmt(major)} мм, масштаб ×${fmt(ep.zoom)}`;
+  }
+
+  const svgEl = $('#epure');
+  const svgPoint = e => { const r = svgEl.getBoundingClientRect(); return [(e.clientX - r.left) * 800 / r.width, (e.clientY - r.top) * 800 / r.height]; };
+  function zoomEpure(f, px = 400, py = 400) {
+    const z = clamp(ep.zoom * f, 0.5, 40);
+    if (z === ep.zoom) return;
+    const k1 = epScale, k2 = epScale * z / ep.zoom;
+    const u = ep.u + (px - 400) / k1, v = ep.v - (py - 400) / k1;
+    ep.u = u - (px - 400) / k2; ep.v = v + (py - 400) / k2; ep.zoom = z;
+    renderEpure();
+  }
+  svgEl.addEventListener('wheel', e => { e.preventDefault(); const [px, py] = svgPoint(e); zoomEpure(Math.exp(-e.deltaY * 0.0015), px, py); }, { passive: false });
+  const epPtrs = new Map();
+  let panMoved = false, pinch = 0;
+  svgEl.addEventListener('pointerdown', e => {
+    epPtrs.set(e.pointerId, svgPoint(e)); panMoved = false;
+    if (epPtrs.size === 2) {
+      const [a, b] = [...epPtrs.values()];
+      pinch = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      for (const id of epPtrs.keys()) { try { svgEl.setPointerCapture(id); } catch (err) {} }
+    }
+  });
+  svgEl.addEventListener('pointermove', e => {
+    if (!epPtrs.has(e.pointerId)) return;
+    const p = svgPoint(e), prev = epPtrs.get(e.pointerId);
+    if (epPtrs.size === 2) {
+      epPtrs.set(e.pointerId, p);
+      const [a, b] = [...epPtrs.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      if (pinch) zoomEpure(d / pinch, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+      pinch = d; panMoved = true;
+      return;
+    }
+    const dx = p[0] - prev[0], dy = p[1] - prev[1];
+    if (!panMoved && Math.hypot(dx, dy) < 4) return;
+    // capture only once it is a drag, so a plain click still reaches the projection under it
+    if (!panMoved) { panMoved = true; try { svgEl.setPointerCapture(e.pointerId); } catch (err) {} }
+    epPtrs.set(e.pointerId, p);
+    ep.u -= dx / epScale; ep.v += dy / epScale;
+    renderEpure();
+  });
+  const endEp = e => { epPtrs.delete(e.pointerId); if (epPtrs.size < 2) pinch = 0; };
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => svgEl.addEventListener(t, endEp));
+  $('#epZoom').addEventListener('click', e => {
+    const b = e.target.closest('button[data-z]'); if (!b) return;
+    if (b.dataset.z === 'in') zoomEpure(1.5);
+    else if (b.dataset.z === 'out') zoomEpure(1 / 1.5);
+    else { ep.zoom = 1; ep.u = 0; ep.v = 0; renderEpure(); }
+  });
+  // label spots around a marker: [dx, dy, text-anchor]
+  const LBL = { ur: [8, -9, 'start'], ul: [-8, -9, 'end'], dr: [8, 20, 'start'], dl: [-8, 20, 'end'], r: [11, 6, 'start'], l: [-11, 6, 'end'], u: [0, -13, 'middle'], d: [0, 25, 'middle'] };
+  const dotBox = (x, y, r) => [x - r, y - r, x + r, y + r];
+  const boxHit = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+  function svgText(x, y, L, cls, anchor, fill) {
+    return `<text class="${cls}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${anchor}" fill="${fill}">${esc(L.base)}${L.sup || ''}${L.sub ? `<tspan dy="5" font-size="0.7em">${esc(L.sub)}</tspan>` : ''}</text>`;
+  }
+
+  // ---------- octants (canvas) ----------
+  const cv = $('#cv'), ctx = cv.getContext('2d');
+  let raf3d = 0;
+  function request3d() { if (!raf3d) raf3d = requestAnimationFrame(() => { raf3d = 0; draw3d(); }); }
+  function sizeCanvas() {
+    const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  }
+  function draw3d() {
+    sizeCanvas();
+    const dpr = window.devicePixelRatio || 1, w = cv.width / dpr, h = cv.height / dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const css = getComputedStyle(document.documentElement), tok = n => css.getPropertyValue(n).trim();
+    const ink = tok('--ink'), muted = tok('--muted'), accent = tok('--accent'), sheet = tok('--sheet');
+    const lf = tok('--font-label') || 'Georgia, serif';
+    const o = state.opts, pts = state.points;
+    const M = extent(), step = niceStep(M / 4), L = Math.ceil(M * 1.15 / step) * step;
+    const S = Math.min(w, h) * 0.36 / L * view.zoom, cx = w / 2, cy = h / 2;
+    const cyw = Math.cos(view.yaw), syw = Math.sin(view.yaw), cp = Math.cos(view.pitch), sp = Math.sin(view.pitch);
+    // X right, Z up, Y toward the viewer
+    const P = (x, y, z) => {
+      const x1 = x * cyw + y * syw, z1 = -x * syw + y * cyw;
+      const y2 = z * cp - z1 * sp, z2 = z * sp + z1 * cp;
+      return [cx + S * x1, cy - S * y2, z2];
+    };
+    const line = (a, b, color, width, alpha, dash) => {
+      ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash || []);
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+    };
+    const text = (s, at, color, size, opts = {}) => {
+      ctx.font = `${opts.bold ? '700 ' : ''}italic ${size}px ${lf}`;
+      ctx.fillStyle = color; ctx.textAlign = opts.align || 'center'; ctx.textBaseline = 'middle';
+      ctx.globalAlpha = opts.alpha == null ? 1 : opts.alpha;
+      if (opts.halo) { ctx.lineWidth = 3; ctx.strokeStyle = sheet; ctx.lineJoin = 'round'; ctx.strokeText(s, at[0], at[1]); }
+      ctx.fillText(s, at[0], at[1]);
+      ctx.globalAlpha = 1;
+    };
+    const label = (Lb, at, color, size, bold, alpha) => {
+      const main = Lb.base + (Lb.sup || '');
+      ctx.font = `${bold ? '700 ' : ''}italic ${size}px ${lf}`;
+      const wMain = ctx.measureText(main).width;
+      text(main, at, color, size, { align: 'left', bold, halo: true, alpha });
+      if (Lb.sub) text(Lb.sub, [at[0] + wMain + 1, at[1] + size * 0.32], color, size * 0.7, { align: 'left', bold, halo: true, alpha });
+    };
+
+    // planes, split into quadrants and painted back to front
+    if (o.planes) {
+      const quads = [];
+      const pc = { 1: tok('--p1'), 2: tok('--p2'), 3: tok('--p3') };
+      for (const a of [1, -1]) for (const b of [1, -1]) {
+        quads.push({ c: pc[1], v: [P(0, 0, 0), P(a * L, 0, 0), P(a * L, b * L, 0), P(0, b * L, 0)] });
+        quads.push({ c: pc[2], v: [P(0, 0, 0), P(a * L, 0, 0), P(a * L, 0, b * L), P(0, 0, b * L)] });
+        quads.push({ c: pc[3], v: [P(0, 0, 0), P(0, a * L, 0), P(0, a * L, b * L), P(0, 0, b * L)] });
+      }
+      for (const q of quads) q.d = q.v.reduce((s, v) => s + v[2], 0) / 4;
+      quads.sort((a, b) => a.d - b.d);
+      for (const q of quads) {
+        ctx.beginPath(); q.v.forEach((v, j) => j ? ctx.lineTo(v[0], v[1]) : ctx.moveTo(v[0], v[1])); ctx.closePath();
+        ctx.globalAlpha = 0.1; ctx.fillStyle = q.c; ctx.fill();
+        ctx.globalAlpha = 0.45; ctx.strokeStyle = q.c; ctx.lineWidth = 1; ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      const f = L * 0.88;
+      text('П₁', P(f, f, 0), pc[1], 17, { bold: true });
+      text('П₂', P(f, 0, f), pc[2], 17, { bold: true });
+      text('П₃', P(0, f, f), pc[3], 17, { bold: true });
+    }
+
+    // axes
+    const A = L * 1.12;
+    const axes = [[[A, 0, 0], 'X'], [[0, A, 0], 'Y'], [[0, 0, A], 'Z']];
+    for (const [e, n] of axes) {
+      const pos = P(...e), neg = P(-e[0], -e[1], -e[2]);
+      line(neg, pos, ink, 1.3, 0.9);
+      const lp = P(e[0] * 1.07, e[1] * 1.07, e[2] * 1.07), ln = P(-e[0] * 1.07, -e[1] * 1.07, -e[2] * 1.07);
+      text(n, lp, ink, 17, { bold: true, halo: true });
+      text('−' + n, ln, muted, 15, { halo: true });
+    }
+    text('O', [P(0, 0, 0)[0] + 9, P(0, 0, 0)[1] + 10], muted, 13);
+
+    // octant numerals
+    const selP = pts[state.sel];
+    const hit = selP ? octMatches(selP) : [];
+    if (o.octLabels) {
+      OCT.forEach((s, i) => {
+        const on = hit.length < 8 && hit.includes(i);
+        text(ROMAN[i], P(s[0] * L / 2, s[1] * L / 2, s[2] * L / 2), on ? accent : muted, on ? 22 : 16, { bold: on, alpha: on ? 1 : 0.6, halo: on });
+      });
+    }
+
+    // points, selected last
+    const order = pts.map((_, i) => i).filter(i => i !== state.sel);
+    if (selP) order.push(state.sel);
+    for (const i of order) {
+      const p = pts[i], sel = i === state.sel, col = p.color, al = sel || state.sel < 0 ? 1 : 0.5;
+      const Pa = P(p.x, p.y, p.z), P1 = P(p.x, p.y, 0), P2 = P(p.x, 0, p.z), P3 = P(0, p.y, p.z);
+      const Ax = P(p.x, 0, 0), Ay = P(0, p.y, 0), Az = P(0, 0, p.z);
+      if (o.links) {
+        const lw = sel ? 1.2 : 0.9;
+        line(P1, Ax, col, lw, 0.6 * al); line(P1, Ay, col, lw, 0.6 * al);
+        line(P2, Ax, col, lw, 0.6 * al); line(P2, Az, col, lw, 0.6 * al);
+        if (o.profile) { line(P3, Ay, col, lw, 0.6 * al); line(P3, Az, col, lw, 0.6 * al); }
+      }
+      const pw = sel ? 1.6 : 1.1;
+      line(Pa, P1, col, pw, al, [5, 4]); line(Pa, P2, col, pw, al, [5, 4]);
+      if (o.profile) line(Pa, P3, col, pw, al, [5, 4]);
+      const dot = (q, r, filled) => {
+        ctx.globalAlpha = al; ctx.beginPath(); ctx.arc(q[0], q[1], r, 0, Math.PI * 2);
+        ctx.fillStyle = filled ? col : sheet; ctx.fill();
+        ctx.lineWidth = filled ? 1.5 : 1.6; ctx.strokeStyle = filled ? sheet : col; ctx.stroke(); ctx.globalAlpha = 1;
+      };
+      if (o.axisPts && o.links && sel) { dot(Ax, 2.4, false); dot(Ay, 2.4, false); dot(Az, 2.4, false); }
+      const projs = [[P1, '1'], [P2, '2']];
+      if (o.profile) projs.push([P3, '3']);
+      for (const [q, s] of projs) {
+        dot(q, sel ? 4 : 3.2, true);
+        label(lab(p, s), [q[0] + 7, q[1] - 9], col, sel ? 16 : 14, sel, al);
+      }
+      dot(Pa, sel ? 6 : 4.6, true);
+      label(lab(p, ''), [Pa[0] + 8, Pa[1] - 11], col, sel ? 19 : 16, true, al);
+    }
+  }
+
+  let anim = 0;
+  function setView(key) {
+    const [ty, tp] = VIEWS[key];
+    if (key === 'axo') view.zoom = 1;
+    document.querySelectorAll('#viewBtns button').forEach(b => b.classList.toggle('on', b.dataset.v === key));
+    cancelAnimationFrame(anim);
+    let y0 = view.yaw; const p0 = view.pitch;
+    while (y0 - ty > Math.PI) y0 -= 2 * Math.PI;
+    while (ty - y0 > Math.PI) y0 += 2 * Math.PI;
+    if (reduceMotion) { view.yaw = ty; view.pitch = tp; draw3d(); return; }
+    const t0 = performance.now();
+    const stepFn = t => {
+      const k = Math.min(1, (t - t0) / 450), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      view.yaw = y0 + (ty - y0) * e; view.pitch = p0 + (tp - p0) * e; draw3d();
+      if (k < 1) anim = requestAnimationFrame(stepFn);
+    };
+    anim = requestAnimationFrame(stepFn);
+  }
+  let drag = null;
+  cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId); cancelAnimationFrame(anim); });
+  cv.addEventListener('pointermove', e => {
+    if (!drag) return;
+    view.yaw += (e.clientX - drag.x) * 0.008;
+    view.pitch = clamp(view.pitch + (e.clientY - drag.y) * 0.008, -90 * D, 90 * D);
+    drag = { x: e.clientX, y: e.clientY };
+    document.querySelectorAll('#viewBtns button').forEach(b => b.classList.remove('on'));
+    request3d();
+  });
+  const endDrag = () => { drag = null; };
+  cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+  cv.addEventListener('wheel', e => { e.preventDefault(); view.zoom = clamp(view.zoom * Math.exp(-e.deltaY * 0.0015), 0.4, 4); request3d(); }, { passive: false });
+  $('#viewBtns').addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (b) setView(b.dataset.v); });
+
+  // ---------- side panel ----------
+  function renderList() {
+    const el = $('#ptList');
+    if (!state.points.length) { el.innerHTML = '<div class="empty">Точек нет. Введите, например, A(20; 35; 15).</div>'; return; }
+    el.innerHTML = state.points.map((p, i) => `
+      <div class="pt${i === state.sel ? ' sel' : ''}" data-i="${i}">
+        <button type="button" class="sw" style="--c:${p.color}" title="Сменить цвет" aria-label="Сменить цвет точки ${esc(p.name)}"></button>
+        <input class="nm" id="nm-${i}" data-f="name" value="${esc(p.name)}" maxlength="6" aria-label="Имя точки">
+        <input type="number" step="any" inputmode="decimal" id="x-${i}" data-f="x" value="${p.x}" aria-label="X точки ${esc(p.name)}">
+        <input type="number" step="any" inputmode="decimal" id="y-${i}" data-f="y" value="${p.y}" aria-label="Y точки ${esc(p.name)}">
+        <input type="number" step="any" inputmode="decimal" id="z-${i}" data-f="z" value="${p.z}" aria-label="Z точки ${esc(p.name)}">
+        <button type="button" class="del" aria-label="Удалить точку ${esc(p.name)}">×</button>
+      </div>`).join('');
+  }
+  function markSelected() {
+    document.querySelectorAll('#ptList .pt').forEach(r => r.classList.toggle('sel', +r.dataset.i === state.sel));
+  }
+  function renderInfo() {
+    const el = $('#infoCard'), p = state.points[state.sel];
+    if (!p) { el.innerHTML = '<h2>Положение точки</h2><p class="note-c">Выберите или добавьте точку, чтобы увидеть октант и координаты проекций.</p>'; return; }
+    const pos = position(p);
+    const L1 = labHtml(lab(p, '1')), L2 = labHtml(lab(p, '2')), L3 = labHtml(lab(p, '3'));
+    const p3h = p.y > 0 ? 'слева от оси Z' : p.y < 0 ? 'справа от оси Z' : 'на оси Z';
+    const same = p.z === -p.y;
+    el.innerHTML = `
+      <div class="info-head">
+        <div class="info-name">${esc(p.name)}<span class="co">(${fmt(p.x)}; ${fmt(p.y)}; ${fmt(p.z)})</span></div>
+        <span class="badge${pos.edge ? ' edge' : ''}">${pos.badge}</span>
+      </div>
+      <p class="info-text">${pos.text}</p>
+      <dl class="kv">
+        <dt>${L2}</dt><dd>(${fmt(p.x)}; ${fmt(p.z)})<small>фронтальная, ${sideX(p.z)}</small></dd>
+        <dt>${L1}</dt><dd>(${fmt(p.x)}; ${fmt(p.y)})<small>горизонтальная, ${sideX(-p.y)}</small></dd>
+        <dt>${L3}</dt><dd>(${fmt(p.y)}; ${fmt(p.z)})<small>профильная, ${p3h}, ${sideX(p.z)}</small></dd>
+      </dl>
+      <div class="dist">
+        <div>до П<sub>1</sub><b>${fmt(Math.abs(p.z))}</b></div>
+        <div>до П<sub>2</sub><b>${fmt(Math.abs(p.y))}</b></div>
+        <div>до П<sub>3</sub><b>${fmt(Math.abs(p.x))}</b></div>
+      </div>
+      ${same ? `<p class="note-c">${L1} и ${L2} совпадают на эпюре, потому что |y| = |z| при разных знаках.</p>` : ''}`;
+  }
+  function renderOctTable() {
+    const p = state.points[state.sel], hit = p ? octMatches(p) : [];
+    const sg = v => v > 0 ? '+' : '−';
+    $('#octBody').innerHTML = OCT.map((s, i) => `
+      <tr class="${hit.length < 8 && hit.includes(i) ? 'hit' : ''}">
+        <td class="r">${ROMAN[i]}</td><td class="s">${sg(s[0])}</td><td class="s">${sg(s[1])}</td><td class="s">${sg(s[2])}</td>
+        <td>${s[1] > 0 ? 'под осью X' : 'над осью X'}</td><td>${s[2] > 0 ? 'над осью X' : 'под осью X'}</td>
+      </tr>`).join('');
+  }
+  function renderOpts() {
+    const o = state.opts;
+    document.querySelectorAll('[data-opt]').forEach(c => { c.checked = !!o[c.dataset.opt]; });
+    document.querySelectorAll('input[name="constMode"]').forEach(r => { r.checked = r.value === o.constMode; });
+    document.querySelectorAll('input[name="notation"]').forEach(r => { r.checked = r.value === o.notation; });
+  }
+  function renderViews() { renderEpure(); request3d(); renderInfo(); renderOctTable(); save(); }
+  function renderAll() { renderList(); renderOpts(); renderViews(); }
+  function select(i) { if (i === state.sel) return; state.sel = i; markSelected(); renderViews(); }
+
+  const list = $('#ptList');
+  list.addEventListener('input', e => {
+    const f = e.target.dataset.f, row = e.target.closest('.pt'); if (!f || !row) return;
+    const p = state.points[+row.dataset.i];
+    if (f === 'name') p.name = e.target.value.trim().slice(0, 6) || '?';
+    else p[f] = num(String(e.target.value).replace(',', '.'));
+    renderViews();
+  });
+  list.addEventListener('focusin', e => { const row = e.target.closest('.pt'); if (row) select(+row.dataset.i); });
+  list.addEventListener('click', e => {
+    const row = e.target.closest('.pt'); if (!row) return;
+    const i = +row.dataset.i;
+    if (e.target.closest('.del')) {
+      state.points.splice(i, 1);
+      if (state.sel >= state.points.length) state.sel = state.points.length - 1;
+      else if (state.sel > i) state.sel--;
+      renderList(); renderViews(); return;
+    }
+    if (e.target.closest('.sw')) {
+      const p = state.points[i];
+      p.color = PALETTE[(PALETTE.indexOf(p.color) + 1) % PALETTE.length];
+      e.target.style.setProperty('--c', p.color);
+    }
+    select(i); renderViews();
+  });
+  $('#epure').addEventListener('click', e => {
+    if (panMoved) { panMoved = false; return; }
+    const g = e.target.closest('[data-i]'); if (g) select(+g.dataset.i);
+  });
+
+  function setMsg(html, err) { const m = $('#quickMsg'); m.innerHTML = html; m.classList.toggle('err', !!err); }
+  function parsePoint(str) {
+    const s = str.replace(/[−–]/g, '-').trim();
+    const m = s.match(/^([A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё0-9_'′]*)?\s*\(?\s*(.*?)\s*\)?\s*$/);
+    if (!m) return null;
+    const body = m[2];
+    const parts = body.includes(';') ? body.split(';').map(t => t.trim().replace(',', '.')) : body.split(/[\s,]+/).filter(Boolean);
+    if (parts.length !== 3) return null;
+    const v = parts.map(Number);
+    if (!v.every(Number.isFinite)) return null;
+    return { name: m[1] ? m[1].slice(0, 6) : '', x: v[0], y: v[1], z: v[2] };
+  }
+  $('#quick').addEventListener('submit', e => {
+    e.preventDefault();
+    const inp = $('#quickInput'), r = parsePoint(inp.value);
+    if (!r) { setMsg('Не удалось разобрать запись. Пример: A(20; 35; −15) или B 10 −20 30.', true); return; }
+    const idx = r.name ? state.points.findIndex(p => p.name === r.name) : -1;
+    if (idx >= 0) {
+      Object.assign(state.points[idx], { x: r.x, y: r.y, z: r.z });
+      state.sel = idx;
+      setMsg(`Точка ${esc(r.name)} обновлена.`);
+    } else {
+      state.points.push({ name: r.name || nextName(), x: r.x, y: r.y, z: r.z, color: nextColor() });
+      state.sel = state.points.length - 1;
+      setMsg(`Добавлена точка ${esc(state.points[state.sel].name)}.`);
+    }
+    inp.value = '';
+    renderList(); renderViews();
+  });
+  $('#btnAdd').addEventListener('click', () => {
+    state.points.push({ name: nextName(), x: 0, y: 0, z: 0, color: nextColor() });
+    state.sel = state.points.length - 1;
+    renderList(); renderViews();
+    const nx = document.getElementById('x-' + state.sel); if (nx) nx.focus();
+  });
+  function snapshot() { return JSON.parse(JSON.stringify({ points: state.points, sel: state.sel })); }
+  function offerUndo(text) {
+    setMsg(`${text} <button type="button" id="undoBtn">Вернуть прежние точки</button>`);
+    $('#undoBtn').addEventListener('click', () => {
+      if (!undo) return;
+      state.points = undo.points; state.sel = undo.sel; undo = null;
+      setMsg('Прежние точки возвращены.'); renderList(); renderViews();
+    });
+  }
+  $('#btnAll8').addEventListener('click', () => {
+    undo = snapshot();
+    state.points = ALL8.map(([name, x, y, z], i) => ({ name, x, y, z, color: PALETTE[i] }));
+    state.sel = 0;
+    offerUndo('Загружено по точке в каждом октанте.');
+    renderList(); renderViews();
+  });
+  let clearTimer = 0;
+  $('#btnClear').addEventListener('click', e => {
+    const b = e.currentTarget;
+    if (!b.classList.contains('armed')) {
+      b.classList.add('armed'); b.textContent = 'Удалить все?';
+      clearTimeout(clearTimer);
+      clearTimer = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Очистить'; }, 3000);
+      return;
+    }
+    clearTimeout(clearTimer); b.classList.remove('armed'); b.textContent = 'Очистить';
+    undo = snapshot(); state.points = []; state.sel = -1;
+    offerUndo('Все точки удалены.');
+    renderList(); renderViews();
+  });
+
+  document.querySelectorAll('[data-opt]').forEach(c => c.addEventListener('change', () => { state.opts[c.dataset.opt] = c.checked; renderViews(); }));
+  document.querySelectorAll('input[name="constMode"], input[name="notation"]').forEach(r => r.addEventListener('change', () => {
+    if (r.checked) { state.opts[r.name] = r.value; renderViews(); }
+  }));
+
+  // theme and size changes
+  if (window.matchMedia) { const mq = matchMedia('(prefers-color-scheme: dark)'); mq.addEventListener && mq.addEventListener('change', request3d); }
+  new MutationObserver(request3d).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  if (window.ResizeObserver) new ResizeObserver(request3d).observe(cv); else window.addEventListener('resize', request3d);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(request3d);
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
