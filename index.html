@@ -97,6 +97,14 @@ input:focus { border-color: var(--accent); outline: none; }
 .del { width: 26px; height: 26px; border: 0; background: none; color: var(--muted); font-size: 18px; cursor: pointer; border-radius: 4px; }
 .del:hover { color: #C0392B; background: var(--paper); }
 .empty { color: var(--muted); font-size: 14px; padding: 8px 6px; }
+.lineForm { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) auto; gap: 8px; }
+.lineForm select { font: 400 14px var(--font-mono); color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 4px; padding: 7px 8px; min-width: 0; }
+.lnList { display: grid; gap: 4px; }
+.ln { display: grid; grid-template-columns: auto minmax(0, 1fr) 26px; gap: 10px; align-items: center; padding: 4px 6px; border-radius: 5px; }
+.ln:hover { background: var(--paper); }
+.ln-name { font-family: var(--font-label); font-style: italic; font-weight: 700; font-size: 16px; }
+.ln-info { font-size: 13px; color: var(--muted); }
+#lineMsg:empty { display: none; }
 
 .info-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .info-name { font-family: var(--font-label); font-style: italic; font-weight: 700; font-size: 22px; }
@@ -133,7 +141,7 @@ input:focus { border-color: var(--accent); outline: none; }
 .viewHead { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 32px; }
 .note { font-size: 12.5px; color: var(--muted); font-family: var(--font-mono); }
 .svgBox, .cvBox { width: 100%; aspect-ratio: 1; max-width: 100%; }
-#epure { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#epure { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
 #epure:active { cursor: grabbing; }
 #epZoom button { min-width: 34px; }
 #epure .pt-g { cursor: pointer; }
@@ -154,6 +162,8 @@ svg .plab.sel { font-weight: 700; font-size: 20px; }
 svg .alab { font-family: var(--font-label); font-style: italic; font-size: 14px; paint-order: stroke; stroke: var(--sheet); stroke-width: 3px; }
 svg .mk { stroke: var(--sheet); stroke-width: 1.6; }
 svg .apt { fill: var(--sheet); stroke-width: 1.4; }
+svg .ln-seg { stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; }
+svg .ln-ext { stroke: var(--ink); stroke-width: 1; opacity: 0.45; stroke-dasharray: 6 4; }
 
 .octTable { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; }
@@ -198,6 +208,18 @@ tr.hit td.r { color: var(--accent); }
           <button id="btnAll8" class="btn" type="button" data-t="all8"></button>
           <button id="btnClear" class="btn ghost" type="button" data-t="clear"></button>
         </div>
+      </section>
+
+      <section class="card" id="linesCard">
+        <h2 data-t="lines"></h2>
+        <div class="lineForm">
+          <select id="lnA" data-t-aria="line_from"></select>
+          <select id="lnB" data-t-aria="line_to"></select>
+          <button type="button" class="btn primary" id="btnLine" data-t="line_add"></button>
+        </div>
+        <p id="lineMsg" class="msg" aria-live="polite"></p>
+        <div id="lnList" class="lnList"></div>
+        <label class="chk"><input type="checkbox" id="opt-extend" data-opt="extend"> <span data-t="o_extend"></span></label>
       </section>
 
       <section class="card" id="infoCard" aria-live="polite"></section>
@@ -276,7 +298,7 @@ tr.hit td.r { color: var(--accent); }
   const LETTERS = 'ABCDEFGHKLMNPQRSTUVW';
   const STORE = 'monge-epure-v1';
   const STORE_VER = 2; // v2: arcs became the default way to carry Y to the profile plane
-  const DEFAULT_OPTS = { links: true, profile: true, axisPts: true, grid: true, planes: true, octLabels: true, constMode: 'arc', notation: 'prime', lang: '' };
+  const DEFAULT_OPTS = { links: true, profile: true, axisPts: true, grid: true, planes: true, octLabels: true, extend: false, constMode: 'arc', notation: 'prime', lang: '' };
 
   // ---------- languages ----------
   const RU = {
@@ -314,6 +336,13 @@ tr.hit td.r { color: var(--accent); }
     undo: 'Вернуть прежние точки', undone: 'Прежние точки возвращены.', loaded8: 'Загружено по точке в каждом октанте.', cleared: 'Все точки удалены.',
     recolor: n => `Сменить цвет точки ${n}`, recolor_t: 'Сменить цвет', name_aria: 'Имя точки',
     del_aria: n => `Удалить точку ${n}`, coord_aria: (c, n) => `${c} точки ${n}`,
+    lines: 'Прямые', line_from: 'Первая точка', line_to: 'Вторая точка', line_add: 'Провести',
+    lines_empty: 'Прямых нет. Выберите две точки и нажмите «Провести».',
+    lines_need: 'Нужно хотя бы две точки.', line_same: 'Выберите две разные точки.', line_exists: n => `Прямая ${n} уже есть.`,
+    o_extend: 'Продлевать прямые за точки',
+    lt_general: 'прямая общего положения', lt_h: 'горизонталь, ∥ П₁', lt_f: 'фронталь, ∥ П₂', lt_p: 'профильная прямая, ∥ П₃',
+    lt_ph: 'горизонтально-проецирующая, ⊥ П₁', lt_pf: 'фронтально-проецирующая, ⊥ П₂', lt_pp: 'профильно-проецирующая, ⊥ П₃',
+    lt_point: 'точки совпадают', length: 'длина', mm: 'мм', del_line: n => `Удалить прямую ${n}`,
   };
   const SR = {
     title: 'Монжов поступак',
@@ -350,6 +379,13 @@ tr.hit td.r { color: var(--accent); }
     undo: 'Врати претходне тачке', undone: 'Претходне тачке су враћене.', loaded8: 'Учитана је по једна тачка у сваком октанту.', cleared: 'Све тачке су обрисане.',
     recolor: n => `Промени боју тачке ${n}`, recolor_t: 'Промени боју', name_aria: 'Име тачке',
     del_aria: n => `Обриши тачку ${n}`, coord_aria: (c, n) => `${c} тачке ${n}`,
+    lines: 'Праве', line_from: 'Прва тачка', line_to: 'Друга тачка', line_add: 'Повуци',
+    lines_empty: 'Нема правих. Изаберите две тачке и притисните „Повуци”.',
+    lines_need: 'Потребне су бар две тачке.', line_same: 'Изаберите две различите тачке.', line_exists: n => `Права ${n} већ постоји.`,
+    o_extend: 'Продужи праве преко тачака',
+    lt_general: 'права општег положаја', lt_h: 'хоризонтала, ∥ π₁', lt_f: 'фронтала, ∥ π₂', lt_p: 'профилна права, ∥ π₃',
+    lt_ph: 'вертикала, ⊥ π₁', lt_pf: 'права нормална на π₂', lt_pp: 'права нормална на π₃',
+    lt_point: 'тачке се поклапају', length: 'дужина', mm: 'мм', del_line: n => `Обриши праву ${n}`,
   };
   // Serbian Latin is a letter-for-letter transliteration of the Cyrillic strings
   const LAT = { А: 'A', Б: 'B', В: 'V', Г: 'G', Д: 'D', Ђ: 'Đ', Е: 'E', Ж: 'Ž', З: 'Z', И: 'I', Ј: 'J', К: 'K', Л: 'L', Љ: 'Lj', М: 'M', Н: 'N', Њ: 'Nj', О: 'O', П: 'P', Р: 'R', С: 'S', Т: 'T', Ћ: 'Ć', У: 'U', Ф: 'F', Х: 'H', Ц: 'C', Ч: 'Č', Џ: 'Dž', Ш: 'Š' };
@@ -381,6 +417,8 @@ tr.hit td.r { color: var(--accent); }
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const fmt = n => { const r = Math.round(n * 100) / 100; return (r < 0 ? '−' : '') + String(Math.abs(r)).replace('.', ','); };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  let uidN = 0;
+  const uid = () => 'p' + Date.now().toString(36) + (uidN++).toString(36);
 
   // ---------- state ----------
   let state = load();
@@ -394,18 +432,21 @@ tr.hit td.r { color: var(--accent); }
         const s = JSON.parse(raw);
         if (s && Array.isArray(s.points)) {
           const points = s.points.map(sanitize);
+          const ids = new Set(points.map(p => p.id));
+          const lines = (Array.isArray(s.lines) ? s.lines : []).filter(l => l && ids.has(l.a) && ids.has(l.b) && l.a !== l.b).map(l => ({ a: l.a, b: l.b }));
           const opts = { ...DEFAULT_OPTS, ...(s.opts || {}) };
           if (s.v !== STORE_VER) opts.constMode = 'arc';
           if (!DICT[opts.lang]) opts.lang = detectLang();
-          return { points, sel: clamp(s.sel | 0, -1, points.length - 1), opts };
+          return { points, lines, sel: clamp(s.sel | 0, -1, points.length - 1), opts };
         }
       }
     } catch (e) {}
-    return { points: SAMPLE.map((p, i) => ({ ...p, color: PALETTE[i] })), sel: 0, opts: { ...DEFAULT_OPTS, lang: detectLang() } };
+    const points = SAMPLE.map((p, i) => ({ ...p, id: uid(), color: PALETTE[i] }));
+    return { points, lines: [{ a: points[0].id, b: points[1].id }], sel: 0, opts: { ...DEFAULT_OPTS, lang: detectLang() } };
   }
   function save() { try { localStorage.setItem(STORE, JSON.stringify({ ...state, v: STORE_VER })); } catch (e) {} }
   function sanitize(p, i) {
-    return { name: String(p && p.name || LETTERS[i % LETTERS.length]).slice(0, 6), x: num(p && p.x), y: num(p && p.y), z: num(p && p.z), color: (p && p.color) || PALETTE[i % PALETTE.length] };
+    return { id: (p && typeof p.id === 'string' && p.id) || uid(), name: String(p && p.name || LETTERS[i % LETTERS.length]).slice(0, 6), x: num(p && p.x), y: num(p && p.y), z: num(p && p.z), color: (p && p.color) || PALETTE[i % PALETTE.length] };
   }
   function nextName() {
     const used = new Set(state.points.map(p => p.name));
@@ -437,6 +478,26 @@ tr.hit td.r { color: var(--accent); }
     return { badge: t('plane_badge', pl), edge: true, text: t('plane_text', pl, half, list[0], list[1]) };
   }
   const sideX = v => t(v > 0 ? 'over_x' : v < 0 ? 'under_x' : 'on_x');
+  // parameter range [t0, t1] where p + t*d stays inside the box lo..hi (Liang-Barsky)
+  function clipT(p, d, lo, hi) {
+    let t0 = -Infinity, t1 = Infinity;
+    for (let i = 0; i < p.length; i++) {
+      if (Math.abs(d[i]) < 1e-12) { if (p[i] < lo[i] || p[i] > hi[i]) return null; continue; }
+      let a = (lo[i] - p[i]) / d[i], b = (hi[i] - p[i]) / d[i];
+      if (a > b) [a, b] = [b, a];
+      t0 = Math.max(t0, a); t1 = Math.min(t1, b);
+    }
+    return t0 <= t1 ? [t0, t1] : null;
+  }
+  // type of the line AB by which coordinate differences vanish
+  function lineInfo(a, b) {
+    const d = [b.x - a.x, b.y - a.y, b.z - a.z], z = d.map(v => Math.abs(v) < 1e-9), n = z.filter(Boolean).length;
+    let k = 'lt_general';
+    if (n === 3) k = 'lt_point';
+    else if (n === 2) k = !z[0] ? 'lt_pp' : !z[1] ? 'lt_pf' : 'lt_ph';
+    else if (n === 1) k = z[2] ? 'lt_h' : z[1] ? 'lt_f' : 'lt_p';
+    return { type: t(k), len: Math.hypot(...d) };
+  }
 
   function lab(p, k) {
     const prime = state.opts.notation === 'prime';
@@ -557,7 +618,23 @@ tr.hit td.r { color: var(--accent); }
       blocks.push(boxAt(LBL[pick]));
       texts += `<g class="pt-g" data-i="${lb.i}">${svgText(lb.x + dx, lb.y + dy, lb.L, lb.cls, an, lb.col)}</g>`;
     }
-    svg.innerHTML = out + links + marks + texts;
+    // lines: each projection joins the same-named projections of its two points
+    let segs = '';
+    for (const ln of state.lines) {
+      const a = pts.find(q => q.id === ln.a), b = pts.find(q => q.id === ln.b);
+      if (!a || !b) continue;
+      const pr = [[[a.x, -a.y], [b.x, -b.y]], [[a.x, a.z], [b.x, b.z]]];
+      if (o.profile) pr.push([[-a.y, a.z], [-b.y, b.z]]);
+      for (const [p, q] of pr) {
+        const d = [q[0] - p[0], q[1] - p[1]];
+        if (o.extend && Math.hypot(d[0], d[1]) > 1e-9) {
+          const c = clipT(p, d, [u0, v0], [u1, v1]);
+          if (c) segs += `<line class="ln-ext" x1="${sx(p[0] + d[0] * c[0])}" y1="${sy(p[1] + d[1] * c[0])}" x2="${sx(p[0] + d[0] * c[1])}" y2="${sy(p[1] + d[1] * c[1])}"/>`;
+        }
+        segs += `<line class="ln-seg" x1="${sx(p[0])}" y1="${sy(p[1])}" x2="${sx(q[0])}" y2="${sy(q[1])}"/>`;
+      }
+    }
+    svg.innerHTML = out + links + segs + marks + texts;
     $('#scaleNote').textContent = t('scale', fmt(minor), fmt(major), fmt(ep.zoom));
   }
 
@@ -709,6 +786,24 @@ tr.hit td.r { color: var(--accent); }
       });
     }
 
+    // lines in space, with their projections on the planes
+    for (const ln of state.lines) {
+      const a = pts.find(q => q.id === ln.a), b = pts.find(q => q.id === ln.b);
+      if (!a || !b) continue;
+      const A3 = [a.x, a.y, a.z], d = [b.x - a.x, b.y - a.y, b.z - a.z];
+      const flat = [[1, 1, 0], [1, 0, 1]];
+      if (o.profile) flat.push([0, 1, 1]);
+      for (const m of flat) {
+        const p = A3.map((v, j) => v * m[j]), q = d.map((v, j) => v * m[j]);
+        line(P(...p), P(p[0] + q[0], p[1] + q[1], p[2] + q[2]), ink, 1.3, 0.7);
+      }
+      if (o.extend && Math.hypot(...d) > 1e-9) {
+        const c = clipT(A3, d, [-L, -L, -L], [L, L, L]);
+        if (c) line(P(...A3.map((v, j) => v + d[j] * c[0])), P(...A3.map((v, j) => v + d[j] * c[1])), ink, 1, 0.45, [6, 4]);
+      }
+      line(P(...A3), P(b.x, b.y, b.z), ink, 2.6, 1);
+    }
+
     // points, selected last
     const order = pts.map((_, i) => i).filter(i => i !== state.sel);
     if (selP) order.push(state.sel);
@@ -841,7 +936,21 @@ tr.hit td.r { color: var(--accent); }
     document.querySelectorAll('[data-t-aria]').forEach(el => { el.setAttribute('aria-label', t(el.dataset.tAria)); });
     setMsg(esc(t('fmt_hint')));
   }
-  function renderViews() { renderEpure(); request3d(); renderInfo(); renderOctTable(); save(); }
+  function renderLines() {
+    const pts = state.points, sa = $('#lnA'), sb = $('#lnB'), keepA = sa.value, keepB = sb.value;
+    const opts = pts.map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+    sa.innerHTML = opts; sb.innerHTML = opts;
+    if (pts.some(p => p.id === keepA)) sa.value = keepA; else if (pts[0]) sa.value = pts[0].id;
+    if (pts.some(p => p.id === keepB)) sb.value = keepB; else if (pts[1]) sb.value = pts[1].id;
+    const byId = id => pts.find(p => p.id === id);
+    $('#lnList').innerHTML = state.lines.length ? state.lines.map((ln, i) => {
+      const a = byId(ln.a), b = byId(ln.b);
+      if (!a || !b) return '';
+      const inf = lineInfo(a, b), nm = a.name + b.name;
+      return `<div class="ln"><span class="ln-name">${esc(nm)}</span><span class="ln-info">${inf.type} · ${t('length')} ${fmt(inf.len)} ${t('mm')}</span><button type="button" class="del" data-l="${i}" aria-label="${esc(t('del_line', nm))}">×</button></div>`;
+    }).join('') : `<div class="empty">${t('lines_empty')}</div>`;
+  }
+  function renderViews() { renderEpure(); request3d(); renderInfo(); renderLines(); renderOctTable(); save(); }
   function renderAll() { applyLang(); renderList(); renderOpts(); renderViews(); }
   function select(i) { if (i === state.sel) return; state.sel = i; markSelected(); renderViews(); }
 
@@ -858,7 +967,8 @@ tr.hit td.r { color: var(--accent); }
     const row = e.target.closest('.pt'); if (!row) return;
     const i = +row.dataset.i;
     if (e.target.closest('.del')) {
-      state.points.splice(i, 1);
+      const [gone] = state.points.splice(i, 1);
+      state.lines = state.lines.filter(l => l.a !== gone.id && l.b !== gone.id);
       if (state.sel >= state.points.length) state.sel = state.points.length - 1;
       else if (state.sel > i) state.sel--;
       renderList(); renderViews(); return;
@@ -897,7 +1007,7 @@ tr.hit td.r { color: var(--accent); }
       state.sel = idx;
       setMsg(esc(t('updated', r.name)));
     } else {
-      state.points.push({ name: r.name || nextName(), x: r.x, y: r.y, z: r.z, color: nextColor() });
+      state.points.push({ id: uid(), name: r.name || nextName(), x: r.x, y: r.y, z: r.z, color: nextColor() });
       state.sel = state.points.length - 1;
       setMsg(esc(t('added', state.points[state.sel].name)));
     }
@@ -905,26 +1015,42 @@ tr.hit td.r { color: var(--accent); }
     renderList(); renderViews();
   });
   $('#btnAdd').addEventListener('click', () => {
-    state.points.push({ name: nextName(), x: 0, y: 0, z: 0, color: nextColor() });
+    state.points.push({ id: uid(), name: nextName(), x: 0, y: 0, z: 0, color: nextColor() });
     state.sel = state.points.length - 1;
     renderList(); renderViews();
     const nx = document.getElementById('x-' + state.sel); if (nx) nx.focus();
   });
-  function snapshot() { return JSON.parse(JSON.stringify({ points: state.points, sel: state.sel })); }
+  function snapshot() { return JSON.parse(JSON.stringify({ points: state.points, lines: state.lines, sel: state.sel })); }
   function offerUndo(text) {
     setMsg(`${text} <button type="button" id="undoBtn">${t('undo')}</button>`);
     $('#undoBtn').addEventListener('click', () => {
       if (!undo) return;
-      state.points = undo.points; state.sel = undo.sel; undo = null;
+      state.points = undo.points; state.lines = undo.lines || []; state.sel = undo.sel; undo = null;
       setMsg(t('undone')); renderList(); renderViews();
     });
   }
   $('#btnAll8').addEventListener('click', () => {
     undo = snapshot();
-    state.points = ALL8.map(([name, x, y, z], i) => ({ name, x, y, z, color: PALETTE[i] }));
+    state.points = ALL8.map(([name, x, y, z], i) => ({ id: uid(), name, x, y, z, color: PALETTE[i] }));
+    state.lines = [];
     state.sel = 0;
     offerUndo(t('loaded8'));
     renderList(); renderViews();
+  });
+  $('#btnLine').addEventListener('click', () => {
+    const a = $('#lnA').value, b = $('#lnB').value, m = $('#lineMsg');
+    m.classList.add('err');
+    if (state.points.length < 2) { m.textContent = t('lines_need'); return; }
+    if (a === b) { m.textContent = t('line_same'); return; }
+    const pa = state.points.find(p => p.id === a), pb = state.points.find(p => p.id === b);
+    if (state.lines.some(l => (l.a === a && l.b === b) || (l.a === b && l.b === a))) { m.textContent = t('line_exists', pa.name + pb.name); return; }
+    state.lines.push({ a, b });
+    m.textContent = ''; m.classList.remove('err');
+    renderViews();
+  });
+  $('#lnList').addEventListener('click', e => {
+    const d = e.target.closest('[data-l]');
+    if (d) { state.lines.splice(+d.dataset.l, 1); renderViews(); }
   });
   let clearTimer = 0;
   $('#btnClear').addEventListener('click', e => {
@@ -936,7 +1062,7 @@ tr.hit td.r { color: var(--accent); }
       return;
     }
     clearTimeout(clearTimer); b.classList.remove('armed'); b.textContent = t('clear');
-    undo = snapshot(); state.points = []; state.sel = -1;
+    undo = snapshot(); state.points = []; state.lines = []; state.sel = -1;
     offerUndo(t('cleared'));
     renderList(); renderViews();
   });
