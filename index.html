@@ -54,6 +54,9 @@ body { background: var(--paper); color: var(--ink); font-family: var(--font-body
 h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 3.2vw, 34px); letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
 h2 { font-family: var(--font-display); font-weight: 500; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; margin: 0; color: var(--muted); }
 .lede { margin: 6px 0 0; max-width: 68ch; color: var(--muted); }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.top-text { flex: 1 1 320px; min-width: 0; }
+.headCtl { display: flex; gap: 8px; flex-wrap: wrap; }
 sub { font-size: 0.72em; }
 
 .layout { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); align-items: start; }
@@ -167,50 +170,50 @@ tr.hit td.r { color: var(--accent); }
 <body>
 
 <div class="wrap">
-  <header>
-    <h1>Эпюр Монжа</h1>
-    <p class="lede">Задайте координаты точки, и программа построит её фронтальную, горизонтальную и профильную проекции на комплексном чертеже, а рядом покажет точку в пространстве октантов. Единицы: мм.</p>
+  <header class="top">
+    <div class="top-text">
+      <h1 data-t="title">Эпюр Монжа</h1>
+      <p class="lede" data-t="lede"></p>
+    </div>
+    <div class="seg" id="langSeg" role="radiogroup" data-t-aria="lang">
+      <label title="Русский"><input type="radio" name="lang" id="lg-ru" value="ru"><span>RU</span></label>
+      <label title="Српски (ћирилица)"><input type="radio" name="lang" id="lg-sr" value="sr"><span>СР</span></label>
+      <label title="Srpski (latinica)"><input type="radio" name="lang" id="lg-srl" value="sr-Latn"><span>SR</span></label>
+    </div>
   </header>
 
   <div class="layout">
     <aside class="side">
       <section class="card">
-        <h2>Точки</h2>
+        <h2 data-t="points"></h2>
         <form id="quick" class="quick" autocomplete="off">
-          <input id="quickInput" type="text" placeholder="A(20; 35; −15)" aria-label="Точка в виде A(x; y; z)">
-          <button type="submit" class="btn primary">Построить</button>
+          <input id="quickInput" type="text" placeholder="A(20; 35; −15)" data-t-aria="ph_aria">
+          <button type="submit" class="btn primary" data-t="build"></button>
         </form>
-        <p id="quickMsg" class="msg" aria-live="polite">Формат: имя(x; y; z). Существующая точка с тем же именем обновится.</p>
-        <div class="ptHead" aria-hidden="true"><span></span><span>ИМЯ</span><span style="text-align:right">X</span><span style="text-align:right">Y</span><span style="text-align:right">Z</span><span></span></div>
+        <p id="quickMsg" class="msg" aria-live="polite"></p>
+        <div class="ptHead" aria-hidden="true"><span></span><span data-t="h_name"></span><span style="text-align:right">X</span><span style="text-align:right">Y</span><span style="text-align:right">Z</span><span></span></div>
         <div id="ptList" class="ptList"></div>
         <div class="row">
-          <button id="btnAdd" class="btn" type="button">+ Точка</button>
-          <button id="btnAll8" class="btn" type="button">Пример: 8 октантов</button>
-          <button id="btnClear" class="btn ghost" type="button">Очистить</button>
+          <button id="btnAdd" class="btn" type="button" data-t="add"></button>
+          <button id="btnAll8" class="btn" type="button" data-t="all8"></button>
+          <button id="btnClear" class="btn ghost" type="button" data-t="clear"></button>
         </div>
       </section>
 
       <section class="card" id="infoCard" aria-live="polite"></section>
 
       <section class="card">
-        <h2>Отображение</h2>
+        <h2 data-t="display"></h2>
         <div class="opts">
-          <label class="chk"><input type="checkbox" id="opt-links" data-opt="links"> Линии связи</label>
-          <label class="chk"><input type="checkbox" id="opt-profile" data-opt="profile"> Профильная проекция (П<sub>3</sub>)</label>
-          <label class="chk"><input type="checkbox" id="opt-axisPts" data-opt="axisPts"> Точки на осях (A<sub>x</sub>, A<sub>y</sub>, A<sub>z</sub>)</label>
-          <label class="chk"><input type="checkbox" id="opt-grid" data-opt="grid"> Сетка на эпюре</label>
-          <label class="chk"><input type="checkbox" id="opt-planes" data-opt="planes"> Плоскости в 3D</label>
-          <label class="chk"><input type="checkbox" id="opt-octLabels" data-opt="octLabels"> Номера октантов в 3D</label>
+          <label class="chk"><input type="checkbox" id="opt-links" data-opt="links"> <span data-t="o_links"></span></label>
+          <label class="chk"><input type="checkbox" id="opt-profile" data-opt="profile"> <span data-t="o_profile"></span></label>
+          <label class="chk"><input type="checkbox" id="opt-axisPts" data-opt="axisPts"> <span data-t-html="o_axisPts"></span></label>
+          <label class="chk"><input type="checkbox" id="opt-grid" data-opt="grid"> <span data-t="o_grid"></span></label>
+          <label class="chk"><input type="checkbox" id="opt-planes" data-opt="planes"> <span data-t="o_planes"></span></label>
+          <label class="chk"><input type="checkbox" id="opt-octLabels" data-opt="octLabels"> <span data-t="o_octLabels"></span></label>
           <div class="optrow">
-            <span>Перенос глубины Y на П<sub>3</sub></span>
-            <div class="seg" role="radiogroup" aria-label="Способ переноса координаты Y">
-              <label><input type="radio" name="constMode" id="cm-line" value="line"><span>Постоянная прямая</span></label>
-              <label><input type="radio" name="constMode" id="cm-arc" value="arc"><span>Дуги</span></label>
-            </div>
-          </div>
-          <div class="optrow">
-            <span>Обозначения проекций</span>
-            <div class="seg" role="radiogroup" aria-label="Обозначения проекций">
+            <span data-t="notation"></span>
+            <div class="seg" role="radiogroup" data-t-aria="notation">
               <label><input type="radio" name="notation" id="nt-prime" value="prime"><span>A′ A″ A‴</span></label>
               <label><input type="radio" name="notation" id="nt-index" value="index"><span>A₁ A₂ A₃</span></label>
             </div>
@@ -222,39 +225,45 @@ tr.hit td.r { color: var(--accent); }
     <main class="views">
       <section class="view">
         <div class="viewHead">
-          <h2>Комплексный чертёж</h2>
-          <div class="seg" id="epZoom">
-            <button type="button" data-z="out" aria-label="Уменьшить">−</button>
-            <button type="button" data-z="in" aria-label="Увеличить">+</button>
-            <button type="button" data-z="fit">Вписать</button>
+          <h2 data-t="epure"></h2>
+          <div class="headCtl">
+            <div class="seg" role="radiogroup" data-t-aria="method">
+              <label><input type="radio" name="constMode" id="cm-arc" value="arc"><span data-t="arcs"></span></label>
+              <label><input type="radio" name="constMode" id="cm-line" value="line"><span data-t="kline"></span></label>
+            </div>
+            <div class="seg" id="epZoom">
+              <button type="button" data-z="out" data-t-aria="zoom_out">−</button>
+              <button type="button" data-z="in" data-t-aria="zoom_in">+</button>
+              <button type="button" data-z="fit" data-t="fit"></button>
+            </div>
           </div>
         </div>
-        <div class="svgBox"><svg id="epure" viewBox="0 0 800 800" role="img" aria-label="Эпюр Монжа с проекциями точек"></svg></div>
-        <p class="hint"><span class="note" id="scaleNote"></span><br>Колесо мыши или два пальца меняют масштаб, перетаскивание сдвигает лист. Щелчок по проекции выбирает точку.</p>
+        <div class="svgBox"><svg id="epure" viewBox="0 0 800 800" role="img" data-t-aria="svg_aria"></svg></div>
+        <p class="hint"><span class="note" id="scaleNote"></span><br><span data-t="epure_hint"></span></p>
       </section>
       <section class="view">
         <div class="viewHead">
-          <h2>Октанты</h2>
+          <h2 data-t="octants"></h2>
           <div class="seg" id="viewBtns">
             <button type="button" data-v="axo" class="on">3D</button>
-            <button type="button" data-v="front">Спереди</button>
-            <button type="button" data-v="top">Сверху</button>
-            <button type="button" data-v="side">Сбоку</button>
+            <button type="button" data-v="front" data-t="v_front"></button>
+            <button type="button" data-v="top" data-t="v_top"></button>
+            <button type="button" data-v="side" data-t="v_side"></button>
           </div>
         </div>
-        <div class="cvBox"><canvas id="cv" aria-label="Наглядное изображение октантов"></canvas></div>
-        <p class="hint">Тяните, чтобы повернуть; колесо мыши меняет масштаб. Виды «Спереди», «Сверху», «Сбоку» совпадают с проекциями на П<sub>2</sub>, П<sub>1</sub>, П<sub>3</sub>.</p>
+        <div class="cvBox"><canvas id="cv" data-t-aria="cv_aria"></canvas></div>
+        <p class="hint" data-t="hint3d"></p>
       </section>
     </main>
   </div>
 
   <section class="card octTable">
-    <h2>Знаки координат в октантах</h2>
+    <h2 data-t="oct_table"></h2>
     <table>
-      <thead><tr><th>Октант</th><th style="text-align:center">X</th><th style="text-align:center">Y</th><th style="text-align:center">Z</th><th>Горизонтальная проекция</th><th>Фронтальная проекция</th></tr></thead>
+      <thead><tr><th data-t="th_oct"></th><th style="text-align:center">X</th><th style="text-align:center">Y</th><th style="text-align:center">Z</th><th data-t="th_h"></th><th data-t="th_f"></th></tr></thead>
       <tbody id="octBody"></tbody>
     </table>
-    <p class="foot">Оси расположены как на вашем листе: X вправо, Z вверх, Y горизонтальной проекции вниз, Y‴ профильной проекции влево. Нумерация октантов общепринятая: I–IV при X &gt; 0 обходят ось X (+ + +, + − +, + − −, + + −), V–VIII повторяют их при X &lt; 0.</p>
+    <p class="foot" data-t="foot"></p>
   </section>
 </div>
 
@@ -266,7 +275,95 @@ tr.hit td.r { color: var(--accent); }
   const OCT = [[1,1,1],[1,-1,1],[1,-1,-1],[1,1,-1],[-1,1,1],[-1,-1,1],[-1,-1,-1],[-1,1,-1]];
   const LETTERS = 'ABCDEFGHKLMNPQRSTUVW';
   const STORE = 'monge-epure-v1';
-  const DEFAULT_OPTS = { links: true, profile: true, axisPts: true, grid: true, planes: true, octLabels: true, constMode: 'line', notation: 'prime' };
+  const STORE_VER = 2; // v2: arcs became the default way to carry Y to the profile plane
+  const DEFAULT_OPTS = { links: true, profile: true, axisPts: true, grid: true, planes: true, octLabels: true, constMode: 'arc', notation: 'prime', lang: '' };
+
+  // ---------- languages ----------
+  const RU = {
+    title: 'Эпюр Монжа',
+    lede: 'Задайте координаты точки, и программа построит её фронтальную, горизонтальную и профильную проекции на комплексном чертеже, а рядом покажет точку в пространстве октантов. Единицы: мм.',
+    lang: 'Язык', points: 'Точки', ph_aria: 'Точка в виде A(x; y; z)', build: 'Построить',
+    fmt_hint: 'Формат: имя(x; y; z). Существующая точка с тем же именем обновится.',
+    h_name: 'ИМЯ', add: '+ Точка', all8: 'Пример: 8 октантов', clear: 'Очистить', clear_armed: 'Удалить все?',
+    display: 'Отображение', o_links: 'Линии связи', o_profile: 'Профильная проекция (П₃)',
+    o_axisPts: 'Точки на осях (A<sub>x</sub>, A<sub>y</sub>, A<sub>z</sub>)', o_grid: 'Сетка на эпюре',
+    o_planes: 'Плоскости в 3D', o_octLabels: 'Номера октантов в 3D', notation: 'Обозначения проекций',
+    epure: 'Комплексный чертёж', method: 'Способ переноса координаты Y', arcs: 'Дуги', kline: 'Прямая k',
+    zoom_out: 'Уменьшить', zoom_in: 'Увеличить', fit: 'Вписать',
+    epure_hint: 'Колесо мыши или два пальца меняют масштаб, перетаскивание сдвигает лист. Щелчок по проекции выбирает точку.',
+    scale: (a, b, z) => `клетка ${a} мм, жирная линия через ${b} мм, масштаб ×${z}`,
+    svg_aria: 'Эпюр Монжа с проекциями точек',
+    octants: 'Октанты', v_front: 'Спереди', v_top: 'Сверху', v_side: 'Сбоку', cv_aria: 'Наглядное изображение октантов',
+    hint3d: 'Тяните, чтобы повернуть; колесо мыши меняет масштаб. Виды «Спереди», «Сверху», «Сбоку» совпадают с проекциями на П₂, П₁, П₃.',
+    oct_table: 'Знаки координат в октантах', th_oct: 'Октант', th_h: 'Горизонтальная проекция', th_f: 'Фронтальная проекция',
+    foot: 'Оси расположены как на вашем листе: X вправо, Z вверх, Y горизонтальной проекции вниз, Y‴ профильной проекции влево. Нумерация октантов общепринятая: I–IV при X > 0 обходят ось X (+ + +, + − +, + − −, + + −), V–VIII повторяют их при X < 0.',
+    over_x: 'над осью X', under_x: 'под осью X', on_x: 'на оси X', left_z: 'слева от оси Z', right_z: 'справа от оси Z', on_z: 'на оси Z',
+    empty_list: 'Точек нет. Введите, например, A(20; 35; 15).',
+    pos_title: 'Положение точки', pos_empty: 'Выберите или добавьте точку, чтобы увидеть октант и координаты проекций.',
+    oct_badge: r => `${r} октант`, oct_text: r => `Точка лежит в ${r} октанте.`,
+    origin_badge: 'Начало координат', origin_text: 'Точка совпадает с началом координат O. Все три проекции тоже в точке O.',
+    axis_badge: ax => `Ось ${ax}`,
+    axis_text: (ax, neg, list) => `Точка лежит на ${neg ? 'отрицательной' : 'положительной'} полуоси ${ax}, на общей границе октантов ${list}.`,
+    plane_badge: pl => `Плоскость ${pl}`,
+    plane_text: (pl, half, a, b) => `Точка лежит в плоскости ${pl}${half ? ' (' + half + ')' : ''}, на границе октантов ${a} и ${b}.`,
+    half_front: 'передняя пола', half_back: 'задняя пола', half_top: 'верхняя пола', half_bottom: 'нижняя пола',
+    pl1: 'П₁', pl2: 'П₂', pl3: 'П₃', proj_f: 'фронтальная', proj_h: 'горизонтальная', proj_p: 'профильная', dist_to: 'до',
+    same_note: (a, b) => `${a} и ${b} совпадают на эпюре, потому что |y| = |z| при разных знаках.`,
+    parse_err: 'Не удалось разобрать запись. Пример: A(20; 35; −15) или B 10 −20 30.',
+    updated: n => `Точка ${n} обновлена.`, added: n => `Добавлена точка ${n}.`,
+    undo: 'Вернуть прежние точки', undone: 'Прежние точки возвращены.', loaded8: 'Загружено по точке в каждом октанте.', cleared: 'Все точки удалены.',
+    recolor: n => `Сменить цвет точки ${n}`, recolor_t: 'Сменить цвет', name_aria: 'Имя точки',
+    del_aria: n => `Удалить точку ${n}`, coord_aria: (c, n) => `${c} точки ${n}`,
+  };
+  const SR = {
+    title: 'Монжов поступак',
+    lede: 'Унесите координате тачке и програм ће нацртати њену фронталну, хоризонталну и профилну пројекцију на Монжовом цртежу, а поред ће приказати тачку у простору октаната. Јединице: мм.',
+    lang: 'Језик', points: 'Тачке', ph_aria: 'Тачка у облику A(x; y; z)', build: 'Нацртај',
+    fmt_hint: 'Облик: име(x; y; z). Постојећа тачка са истим именом биће измењена.',
+    h_name: 'ИМЕ', add: '+ Тачка', all8: 'Пример: 8 октаната', clear: 'Обриши све', clear_armed: 'Обрисати све?',
+    display: 'Приказ', o_links: 'Спојнице (ординале)', o_profile: 'Профилна пројекција (π₃)',
+    o_axisPts: 'Тачке на осама (A<sub>x</sub>, A<sub>y</sub>, A<sub>z</sub>)', o_grid: 'Мрежа на цртежу',
+    o_planes: 'Равни у 3D', o_octLabels: 'Бројеви октаната у 3D', notation: 'Ознаке пројекција',
+    epure: 'Монжов цртеж', method: 'Начин преноса координате Y', arcs: 'Лукови', kline: 'Права k',
+    zoom_out: 'Умањи', zoom_in: 'Увећај', fit: 'Уклопи',
+    epure_hint: 'Точкић миша или два прста мењају размеру, превлачење помера лист. Клик на пројекцију бира тачку.',
+    scale: (a, b, z) => `квадратић ${a} мм, дебља линија на сваких ${b} мм, размера ×${z}`,
+    svg_aria: 'Монжов цртеж са пројекцијама тачака',
+    octants: 'Октанти', v_front: 'Спреда', v_top: 'Одозго', v_side: 'Са стране', cv_aria: 'Просторни приказ октаната',
+    hint3d: 'Превуците да бисте ротирали; точкић миша мења размеру. Погледи „Спреда”, „Одозго” и „Са стране” поклапају се са пројекцијама на π₂, π₁, π₃.',
+    oct_table: 'Предзнаци координата у октантима', th_oct: 'Октант', th_h: 'Хоризонтална пројекција', th_f: 'Фронтална пројекција',
+    foot: 'Осе су постављене као на вашем листу: X удесно, Z нагоре, Y хоризонталне пројекције надоле, Y‴ профилне пројекције улево. Нумерација октаната: I–IV за X > 0 иду око осе X (+ + +, + − +, + − −, + + −), V–VIII их понављају за X < 0.',
+    over_x: 'изнад осе X', under_x: 'испод осе X', on_x: 'на оси X', left_z: 'лево од осе Z', right_z: 'десно од осе Z', on_z: 'на оси Z',
+    empty_list: 'Нема тачака. Унесите, на пример, A(20; 35; 15).',
+    pos_title: 'Положај тачке', pos_empty: 'Изаберите или додајте тачку да бисте видели октант и координате пројекција.',
+    oct_badge: r => `${r} октант`, oct_text: r => `Тачка се налази у ${r} октанту.`,
+    origin_badge: 'Координатни почетак', origin_text: 'Тачка се поклапа са координатним почетком O. Све три пројекције су такође у тачки O.',
+    axis_badge: ax => `Оса ${ax}`,
+    axis_text: (ax, neg, list) => `Тачка лежи на ${neg ? 'негативном' : 'позитивном'} делу осе ${ax}, на заједничкој граници октаната ${list}.`,
+    plane_badge: pl => `Раван ${pl}`,
+    plane_text: (pl, half, a, b) => `Тачка лежи у равни ${pl}${half ? ' (' + half + ')' : ''}, на граници октаната ${a} и ${b}.`,
+    half_front: 'предњи део', half_back: 'задњи део', half_top: 'горњи део', half_bottom: 'доњи део',
+    pl1: 'π₁', pl2: 'π₂', pl3: 'π₃', proj_f: 'фронтална', proj_h: 'хоризонтална', proj_p: 'профилна', dist_to: 'до',
+    same_note: (a, b) => `${a} и ${b} се поклапају на цртежу јер је |y| = |z| са супротним предзнацима.`,
+    parse_err: 'Запис није препознат. Пример: A(20; 35; −15) или B 10 −20 30.',
+    updated: n => `Тачка ${n} је измењена.`, added: n => `Додата је тачка ${n}.`,
+    undo: 'Врати претходне тачке', undone: 'Претходне тачке су враћене.', loaded8: 'Учитана је по једна тачка у сваком октанту.', cleared: 'Све тачке су обрисане.',
+    recolor: n => `Промени боју тачке ${n}`, recolor_t: 'Промени боју', name_aria: 'Име тачке',
+    del_aria: n => `Обриши тачку ${n}`, coord_aria: (c, n) => `${c} тачке ${n}`,
+  };
+  // Serbian Latin is a letter-for-letter transliteration of the Cyrillic strings
+  const LAT = { А: 'A', Б: 'B', В: 'V', Г: 'G', Д: 'D', Ђ: 'Đ', Е: 'E', Ж: 'Ž', З: 'Z', И: 'I', Ј: 'J', К: 'K', Л: 'L', Љ: 'Lj', М: 'M', Н: 'N', Њ: 'Nj', О: 'O', П: 'P', Р: 'R', С: 'S', Т: 'T', Ћ: 'Ć', У: 'U', Ф: 'F', Х: 'H', Ц: 'C', Ч: 'Č', Џ: 'Dž', Ш: 'Š' };
+  for (const [k, v] of Object.entries(LAT)) LAT[k.toLowerCase()] = v.toLowerCase();
+  const lat = s => String(s).replace(/[Ѐ-ӿ]/g, c => LAT[c] || c);
+  const SR_LATN = Object.fromEntries(Object.entries(SR).map(([k, v]) => [k, typeof v === 'function' ? (...a) => lat(v(...a)) : lat(v)]));
+  const DICT = { ru: RU, sr: SR, 'sr-Latn': SR_LATN };
+  function detectLang() {
+    const ls = (navigator.languages || [navigator.language || '']).map(l => String(l).toLowerCase());
+    const sr = ls.find(l => l.startsWith('sr') || l.startsWith('bs') || l.startsWith('hr'));
+    if (!sr) return 'ru';
+    return sr.startsWith('sr') && !sr.includes('latn') ? 'sr' : 'sr-Latn';
+  }
+  const t = (k, ...a) => { const d = DICT[state.opts.lang] || RU, v = k in d ? d[k] : RU[k]; return typeof v === 'function' ? v(...a) : v; };
   const SAMPLE = [
     { name: 'A', x: 30, y: 20, z: 25 },
     { name: 'B', x: 15, y: -25, z: 20 },
@@ -297,13 +394,16 @@ tr.hit td.r { color: var(--accent); }
         const s = JSON.parse(raw);
         if (s && Array.isArray(s.points)) {
           const points = s.points.map(sanitize);
-          return { points, sel: clamp(s.sel | 0, -1, points.length - 1), opts: { ...DEFAULT_OPTS, ...(s.opts || {}) } };
+          const opts = { ...DEFAULT_OPTS, ...(s.opts || {}) };
+          if (s.v !== STORE_VER) opts.constMode = 'arc';
+          if (!DICT[opts.lang]) opts.lang = detectLang();
+          return { points, sel: clamp(s.sel | 0, -1, points.length - 1), opts };
         }
       }
     } catch (e) {}
-    return { points: SAMPLE.map((p, i) => ({ ...p, color: PALETTE[i] })), sel: 0, opts: { ...DEFAULT_OPTS } };
+    return { points: SAMPLE.map((p, i) => ({ ...p, color: PALETTE[i] })), sel: 0, opts: { ...DEFAULT_OPTS, lang: detectLang() } };
   }
-  function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }
+  function save() { try { localStorage.setItem(STORE, JSON.stringify({ ...state, v: STORE_VER })); } catch (e) {} }
   function sanitize(p, i) {
     return { name: String(p && p.name || LETTERS[i % LETTERS.length]).slice(0, 6), x: num(p && p.x), y: num(p && p.y), z: num(p && p.z), color: (p && p.color) || PALETTE[i % PALETTE.length] };
   }
@@ -324,19 +424,19 @@ tr.hit td.r { color: var(--accent); }
   }
   function position(p) {
     const m = octMatches(p), list = m.map(i => ROMAN[i]);
-    if (m.length === 1) return { badge: ROMAN[m[0]] + ' октант', edge: false, text: `Точка лежит в ${ROMAN[m[0]]} октанте.` };
-    if (m.length === 8) return { badge: 'Начало координат', edge: true, text: 'Точка совпадает с началом координат O. Все три проекции тоже в точке O.' };
+    if (m.length === 1) return { badge: t('oct_badge', ROMAN[m[0]]), edge: false, text: t('oct_text', ROMAN[m[0]]) };
+    if (m.length === 8) return { badge: t('origin_badge'), edge: true, text: t('origin_text') };
     if (m.length === 4) {
       const ax = p.x ? 'X' : p.y ? 'Y' : 'Z', v = p.x || p.y || p.z;
-      return { badge: `Ось ${v < 0 ? '−' : ''}${ax}`, edge: true, text: `Точка лежит на ${v < 0 ? 'отрицательной' : 'положительной'} полуоси ${ax}, на общей границе октантов ${list.join(', ')}.` };
+      return { badge: t('axis_badge', (v < 0 ? '−' : '') + ax), edge: true, text: t('axis_text', ax, v < 0, list.join(', ')) };
     }
     let pl, half;
-    if (p.z === 0) { pl = 'П₁'; half = p.y > 0 ? 'передняя пола' : 'задняя пола'; }
-    else if (p.y === 0) { pl = 'П₂'; half = p.z > 0 ? 'верхняя пола' : 'нижняя пола'; }
-    else { pl = 'П₃'; half = ''; }
-    return { badge: 'Плоскость ' + pl, edge: true, text: `Точка лежит в плоскости ${pl}${half ? ' (' + half + ')' : ''}, на границе октантов ${list[0]} и ${list[1]}.` };
+    if (p.z === 0) { pl = t('pl1'); half = t(p.y > 0 ? 'half_front' : 'half_back'); }
+    else if (p.y === 0) { pl = t('pl2'); half = t(p.z > 0 ? 'half_top' : 'half_bottom'); }
+    else { pl = t('pl3'); half = ''; }
+    return { badge: t('plane_badge', pl), edge: true, text: t('plane_text', pl, half, list[0], list[1]) };
   }
-  const sideX = v => v > 0 ? 'над осью X' : v < 0 ? 'под осью X' : 'на оси X';
+  const sideX = v => t(v > 0 ? 'over_x' : v < 0 ? 'under_x' : 'on_x');
 
   function lab(p, k) {
     const prime = state.opts.notation === 'prime';
@@ -458,7 +558,7 @@ tr.hit td.r { color: var(--accent); }
       texts += `<g class="pt-g" data-i="${lb.i}">${svgText(lb.x + dx, lb.y + dy, lb.L, lb.cls, an, lb.col)}</g>`;
     }
     svg.innerHTML = out + links + marks + texts;
-    $('#scaleNote').textContent = `клетка ${fmt(minor)} мм, жирная линия через ${fmt(major)} мм, масштаб ×${fmt(ep.zoom)}`;
+    $('#scaleNote').textContent = t('scale', fmt(minor), fmt(major), fmt(ep.zoom));
   }
 
   const svgEl = $('#epure');
@@ -582,9 +682,9 @@ tr.hit td.r { color: var(--accent); }
         ctx.globalAlpha = 1;
       }
       const f = L * 0.88;
-      text('П₁', P(f, f, 0), pc[1], 17, { bold: true });
-      text('П₂', P(f, 0, f), pc[2], 17, { bold: true });
-      text('П₃', P(0, f, f), pc[3], 17, { bold: true });
+      text(t('pl1'), P(f, f, 0), pc[1], 17, { bold: true });
+      text(t('pl2'), P(f, 0, f), pc[2], 17, { bold: true });
+      text(t('pl3'), P(0, f, f), pc[3], 17, { bold: true });
     }
 
     // axes
@@ -678,15 +778,15 @@ tr.hit td.r { color: var(--accent); }
   // ---------- side panel ----------
   function renderList() {
     const el = $('#ptList');
-    if (!state.points.length) { el.innerHTML = '<div class="empty">Точек нет. Введите, например, A(20; 35; 15).</div>'; return; }
+    if (!state.points.length) { el.innerHTML = `<div class="empty">${t('empty_list')}</div>`; return; }
     el.innerHTML = state.points.map((p, i) => `
       <div class="pt${i === state.sel ? ' sel' : ''}" data-i="${i}">
-        <button type="button" class="sw" style="--c:${p.color}" title="Сменить цвет" aria-label="Сменить цвет точки ${esc(p.name)}"></button>
-        <input class="nm" id="nm-${i}" data-f="name" value="${esc(p.name)}" maxlength="6" aria-label="Имя точки">
-        <input type="number" step="any" inputmode="decimal" id="x-${i}" data-f="x" value="${p.x}" aria-label="X точки ${esc(p.name)}">
-        <input type="number" step="any" inputmode="decimal" id="y-${i}" data-f="y" value="${p.y}" aria-label="Y точки ${esc(p.name)}">
-        <input type="number" step="any" inputmode="decimal" id="z-${i}" data-f="z" value="${p.z}" aria-label="Z точки ${esc(p.name)}">
-        <button type="button" class="del" aria-label="Удалить точку ${esc(p.name)}">×</button>
+        <button type="button" class="sw" style="--c:${p.color}" title="${t('recolor_t')}" aria-label="${esc(t('recolor', p.name))}"></button>
+        <input class="nm" id="nm-${i}" data-f="name" value="${esc(p.name)}" maxlength="6" aria-label="${t('name_aria')}">
+        <input type="number" step="any" inputmode="decimal" id="x-${i}" data-f="x" value="${p.x}" aria-label="${esc(t('coord_aria', 'X', p.name))}">
+        <input type="number" step="any" inputmode="decimal" id="y-${i}" data-f="y" value="${p.y}" aria-label="${esc(t('coord_aria', 'Y', p.name))}">
+        <input type="number" step="any" inputmode="decimal" id="z-${i}" data-f="z" value="${p.z}" aria-label="${esc(t('coord_aria', 'Z', p.name))}">
+        <button type="button" class="del" aria-label="${esc(t('del_aria', p.name))}">×</button>
       </div>`).join('');
   }
   function markSelected() {
@@ -694,10 +794,10 @@ tr.hit td.r { color: var(--accent); }
   }
   function renderInfo() {
     const el = $('#infoCard'), p = state.points[state.sel];
-    if (!p) { el.innerHTML = '<h2>Положение точки</h2><p class="note-c">Выберите или добавьте точку, чтобы увидеть октант и координаты проекций.</p>'; return; }
+    if (!p) { el.innerHTML = `<h2>${t('pos_title')}</h2><p class="note-c">${t('pos_empty')}</p>`; return; }
     const pos = position(p);
     const L1 = labHtml(lab(p, '1')), L2 = labHtml(lab(p, '2')), L3 = labHtml(lab(p, '3'));
-    const p3h = p.y > 0 ? 'слева от оси Z' : p.y < 0 ? 'справа от оси Z' : 'на оси Z';
+    const p3h = t(p.y > 0 ? 'left_z' : p.y < 0 ? 'right_z' : 'on_z');
     const same = p.z === -p.y;
     el.innerHTML = `
       <div class="info-head">
@@ -706,16 +806,16 @@ tr.hit td.r { color: var(--accent); }
       </div>
       <p class="info-text">${pos.text}</p>
       <dl class="kv">
-        <dt>${L2}</dt><dd>(${fmt(p.x)}; ${fmt(p.z)})<small>фронтальная, ${sideX(p.z)}</small></dd>
-        <dt>${L1}</dt><dd>(${fmt(p.x)}; ${fmt(p.y)})<small>горизонтальная, ${sideX(-p.y)}</small></dd>
-        <dt>${L3}</dt><dd>(${fmt(p.y)}; ${fmt(p.z)})<small>профильная, ${p3h}, ${sideX(p.z)}</small></dd>
+        <dt>${L2}</dt><dd>(${fmt(p.x)}; ${fmt(p.z)})<small>${t('proj_f')}, ${sideX(p.z)}</small></dd>
+        <dt>${L1}</dt><dd>(${fmt(p.x)}; ${fmt(p.y)})<small>${t('proj_h')}, ${sideX(-p.y)}</small></dd>
+        <dt>${L3}</dt><dd>(${fmt(p.y)}; ${fmt(p.z)})<small>${t('proj_p')}, ${p3h}, ${sideX(p.z)}</small></dd>
       </dl>
       <div class="dist">
-        <div>до П<sub>1</sub><b>${fmt(Math.abs(p.z))}</b></div>
-        <div>до П<sub>2</sub><b>${fmt(Math.abs(p.y))}</b></div>
-        <div>до П<sub>3</sub><b>${fmt(Math.abs(p.x))}</b></div>
+        <div>${t('dist_to')} ${t('pl1')}<b>${fmt(Math.abs(p.z))}</b></div>
+        <div>${t('dist_to')} ${t('pl2')}<b>${fmt(Math.abs(p.y))}</b></div>
+        <div>${t('dist_to')} ${t('pl3')}<b>${fmt(Math.abs(p.x))}</b></div>
       </div>
-      ${same ? `<p class="note-c">${L1} и ${L2} совпадают на эпюре, потому что |y| = |z| при разных знаках.</p>` : ''}`;
+      ${same ? `<p class="note-c">${t('same_note', L1, L2)}</p>` : ''}`;
   }
   function renderOctTable() {
     const p = state.points[state.sel], hit = p ? octMatches(p) : [];
@@ -723,7 +823,7 @@ tr.hit td.r { color: var(--accent); }
     $('#octBody').innerHTML = OCT.map((s, i) => `
       <tr class="${hit.length < 8 && hit.includes(i) ? 'hit' : ''}">
         <td class="r">${ROMAN[i]}</td><td class="s">${sg(s[0])}</td><td class="s">${sg(s[1])}</td><td class="s">${sg(s[2])}</td>
-        <td>${s[1] > 0 ? 'под осью X' : 'над осью X'}</td><td>${s[2] > 0 ? 'над осью X' : 'под осью X'}</td>
+        <td>${sideX(-s[1])}</td><td>${sideX(s[2])}</td>
       </tr>`).join('');
   }
   function renderOpts() {
@@ -731,9 +831,18 @@ tr.hit td.r { color: var(--accent); }
     document.querySelectorAll('[data-opt]').forEach(c => { c.checked = !!o[c.dataset.opt]; });
     document.querySelectorAll('input[name="constMode"]').forEach(r => { r.checked = r.value === o.constMode; });
     document.querySelectorAll('input[name="notation"]').forEach(r => { r.checked = r.value === o.notation; });
+    document.querySelectorAll('input[name="lang"]').forEach(r => { r.checked = r.value === o.lang; });
+  }
+  function applyLang() {
+    document.documentElement.lang = state.opts.lang;
+    document.title = t('title');
+    document.querySelectorAll('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); });
+    document.querySelectorAll('[data-t-html]').forEach(el => { el.innerHTML = t(el.dataset.tHtml); });
+    document.querySelectorAll('[data-t-aria]').forEach(el => { el.setAttribute('aria-label', t(el.dataset.tAria)); });
+    setMsg(esc(t('fmt_hint')));
   }
   function renderViews() { renderEpure(); request3d(); renderInfo(); renderOctTable(); save(); }
-  function renderAll() { renderList(); renderOpts(); renderViews(); }
+  function renderAll() { applyLang(); renderList(); renderOpts(); renderViews(); }
   function select(i) { if (i === state.sel) return; state.sel = i; markSelected(); renderViews(); }
 
   const list = $('#ptList');
@@ -769,7 +878,7 @@ tr.hit td.r { color: var(--accent); }
   function setMsg(html, err) { const m = $('#quickMsg'); m.innerHTML = html; m.classList.toggle('err', !!err); }
   function parsePoint(str) {
     const s = str.replace(/[−–]/g, '-').trim();
-    const m = s.match(/^([A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё0-9_'′]*)?\s*\(?\s*(.*?)\s*\)?\s*$/);
+    const m = s.match(/^(\p{L}[\p{L}\p{N}_'′]*)?\s*\(?\s*(.*?)\s*\)?\s*$/u);
     if (!m) return null;
     const body = m[2];
     const parts = body.includes(';') ? body.split(';').map(t => t.trim().replace(',', '.')) : body.split(/[\s,]+/).filter(Boolean);
@@ -781,16 +890,16 @@ tr.hit td.r { color: var(--accent); }
   $('#quick').addEventListener('submit', e => {
     e.preventDefault();
     const inp = $('#quickInput'), r = parsePoint(inp.value);
-    if (!r) { setMsg('Не удалось разобрать запись. Пример: A(20; 35; −15) или B 10 −20 30.', true); return; }
+    if (!r) { setMsg(esc(t('parse_err')), true); return; }
     const idx = r.name ? state.points.findIndex(p => p.name === r.name) : -1;
     if (idx >= 0) {
       Object.assign(state.points[idx], { x: r.x, y: r.y, z: r.z });
       state.sel = idx;
-      setMsg(`Точка ${esc(r.name)} обновлена.`);
+      setMsg(esc(t('updated', r.name)));
     } else {
       state.points.push({ name: r.name || nextName(), x: r.x, y: r.y, z: r.z, color: nextColor() });
       state.sel = state.points.length - 1;
-      setMsg(`Добавлена точка ${esc(state.points[state.sel].name)}.`);
+      setMsg(esc(t('added', state.points[state.sel].name)));
     }
     inp.value = '';
     renderList(); renderViews();
@@ -803,38 +912,41 @@ tr.hit td.r { color: var(--accent); }
   });
   function snapshot() { return JSON.parse(JSON.stringify({ points: state.points, sel: state.sel })); }
   function offerUndo(text) {
-    setMsg(`${text} <button type="button" id="undoBtn">Вернуть прежние точки</button>`);
+    setMsg(`${text} <button type="button" id="undoBtn">${t('undo')}</button>`);
     $('#undoBtn').addEventListener('click', () => {
       if (!undo) return;
       state.points = undo.points; state.sel = undo.sel; undo = null;
-      setMsg('Прежние точки возвращены.'); renderList(); renderViews();
+      setMsg(t('undone')); renderList(); renderViews();
     });
   }
   $('#btnAll8').addEventListener('click', () => {
     undo = snapshot();
     state.points = ALL8.map(([name, x, y, z], i) => ({ name, x, y, z, color: PALETTE[i] }));
     state.sel = 0;
-    offerUndo('Загружено по точке в каждом октанте.');
+    offerUndo(t('loaded8'));
     renderList(); renderViews();
   });
   let clearTimer = 0;
   $('#btnClear').addEventListener('click', e => {
     const b = e.currentTarget;
     if (!b.classList.contains('armed')) {
-      b.classList.add('armed'); b.textContent = 'Удалить все?';
+      b.classList.add('armed'); b.textContent = t('clear_armed');
       clearTimeout(clearTimer);
-      clearTimer = setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Очистить'; }, 3000);
+      clearTimer = setTimeout(() => { b.classList.remove('armed'); b.textContent = t('clear'); }, 3000);
       return;
     }
-    clearTimeout(clearTimer); b.classList.remove('armed'); b.textContent = 'Очистить';
+    clearTimeout(clearTimer); b.classList.remove('armed'); b.textContent = t('clear');
     undo = snapshot(); state.points = []; state.sel = -1;
-    offerUndo('Все точки удалены.');
+    offerUndo(t('cleared'));
     renderList(); renderViews();
   });
 
   document.querySelectorAll('[data-opt]').forEach(c => c.addEventListener('change', () => { state.opts[c.dataset.opt] = c.checked; renderViews(); }));
   document.querySelectorAll('input[name="constMode"], input[name="notation"]').forEach(r => r.addEventListener('change', () => {
     if (r.checked) { state.opts[r.name] = r.value; renderViews(); }
+  }));
+  document.querySelectorAll('input[name="lang"]').forEach(r => r.addEventListener('change', () => {
+    if (r.checked) { state.opts.lang = r.value; renderAll(); }
   }));
 
   // theme and size changes
